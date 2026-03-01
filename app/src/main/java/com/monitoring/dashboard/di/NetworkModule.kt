@@ -3,10 +3,14 @@ package com.monitoring.dashboard.di
 import com.monitoring.dashboard.BuildConfig
 import com.monitoring.dashboard.data.local.SecurePreferencesManager
 import com.monitoring.dashboard.data.remote.GrafanaApiService
+import com.monitoring.dashboard.data.remote.NewRelicApiService
 import com.monitoring.dashboard.data.remote.interceptor.AuthInterceptor
 import com.monitoring.dashboard.data.remote.interceptor.DynamicBaseUrlInterceptor
+import com.monitoring.dashboard.data.remote.interceptor.NewRelicAuthInterceptor
 import com.monitoring.dashboard.data.repository.GrafanaRepository
 import com.monitoring.dashboard.data.repository.GrafanaRepositoryImpl
+import com.monitoring.dashboard.data.repository.NewRelicRepository
+import com.monitoring.dashboard.data.repository.NewRelicRepositoryImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -25,6 +29,11 @@ import javax.inject.Singleton
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class GrafanaClient
+
+/** Qualifier to distinguish the New Relic-specific OkHttpClient & Retrofit instances. */
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class NewRelicClient
 
 /** Qualifier for the IO dispatcher. */
 @Qualifier
@@ -55,7 +64,9 @@ object NetworkModule {
             }
         }
 
-    // ── OkHttpClient (Grafana) ────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════
+    // ██  GRAFANA  ████████████████████████████████████████████████████████
+    // ══════════════════════════════════════════════════════════════════════
 
     @Provides
     @Singleton
@@ -74,8 +85,6 @@ object NetworkModule {
             .writeTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .build()
 
-    // ── Retrofit (Grafana) ────────────────────────────────────────────────
-
     @Provides
     @Singleton
     @GrafanaClient
@@ -83,7 +92,6 @@ object NetworkModule {
         @GrafanaClient okHttpClient: OkHttpClient,
         securePreferencesManager: SecurePreferencesManager,
     ): Retrofit {
-        // Use stored base URL if available, otherwise fall back to BuildConfig default.
         val baseUrl = securePreferencesManager.getGrafanaBaseUrl()
             ?.ensureTrailingSlash()
             ?: BuildConfig.GRAFANA_BASE_URL.ensureTrailingSlash()
@@ -95,16 +103,12 @@ object NetworkModule {
             .build()
     }
 
-    // ── API Service ───────────────────────────────────────────────────────
-
     @Provides
     @Singleton
     fun provideGrafanaApiService(
         @GrafanaClient retrofit: Retrofit,
     ): GrafanaApiService =
         retrofit.create(GrafanaApiService::class.java)
-
-    // ─��� Repository ────────────────────────────────────────────────────────
 
     @Provides
     @Singleton
@@ -114,6 +118,52 @@ object NetworkModule {
     ): GrafanaRepository =
         GrafanaRepositoryImpl(apiService, ioDispatcher)
 
+    // ══════════════════════════════════════════════════════════════════════
+    // ██  NEW RELIC  ██████████████████████████████████████████████████████
+    // ══════════════════════════════════════════════════════════════════════
+
+    @Provides
+    @Singleton
+    @NewRelicClient
+    fun provideNewRelicOkHttpClient(
+        newRelicAuthInterceptor: NewRelicAuthInterceptor,
+        loggingInterceptor: HttpLoggingInterceptor,
+    ): OkHttpClient =
+        OkHttpClient.Builder()
+            .addInterceptor(newRelicAuthInterceptor)
+            .addInterceptor(loggingInterceptor)
+            .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .writeTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .build()
+
+    @Provides
+    @Singleton
+    @NewRelicClient
+    fun provideNewRelicRetrofit(
+        @NewRelicClient okHttpClient: OkHttpClient,
+    ): Retrofit =
+        Retrofit.Builder()
+            .baseUrl(BuildConfig.NEWRELIC_BASE_URL.ensureTrailingSlash())
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+
+    @Provides
+    @Singleton
+    fun provideNewRelicApiService(
+        @NewRelicClient retrofit: Retrofit,
+    ): NewRelicApiService =
+        retrofit.create(NewRelicApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun provideNewRelicRepository(
+        apiService: NewRelicApiService,
+        @IoDispatcher ioDispatcher: CoroutineDispatcher,
+    ): NewRelicRepository =
+        NewRelicRepositoryImpl(apiService, ioDispatcher)
+
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private const val TIMEOUT_SECONDS = 30L
@@ -121,4 +171,3 @@ object NetworkModule {
     private fun String.ensureTrailingSlash(): String =
         if (endsWith("/")) this else "$this/"
 }
-
