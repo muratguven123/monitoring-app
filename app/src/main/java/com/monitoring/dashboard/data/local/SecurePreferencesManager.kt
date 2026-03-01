@@ -47,6 +47,22 @@ class SecurePreferencesManager @Inject constructor(
     fun getGrafanaBaseUrl(): String? =
         prefs.getString(KEY_GRAFANA_BASE_URL, null)
 
+    // ── New Relic ──────────────────────────────────────────────────────────
+
+    fun saveNewRelicApiKey(apiKey: String) {
+        prefs.edit().putString(KEY_NEWRELIC_API_KEY, apiKey).apply()
+    }
+
+    fun getNewRelicApiKey(): String? =
+        prefs.getString(KEY_NEWRELIC_API_KEY, null)
+
+    fun saveNewRelicAccountId(accountId: String) {
+        prefs.edit().putString(KEY_NEWRELIC_ACCOUNT_ID, accountId).apply()
+    }
+
+    fun getNewRelicAccountId(): String? =
+        prefs.getString(KEY_NEWRELIC_ACCOUNT_ID, null)
+
     // ── General ────────────────────────────────────────────────────────────
 
     fun clearAll() {
@@ -57,6 +73,8 @@ class SecurePreferencesManager @Inject constructor(
         private const val PREFS_FILE_NAME = "monitoring_secure_prefs"
         private const val KEY_GRAFANA_API_KEY = "grafana_api_key"
         private const val KEY_GRAFANA_BASE_URL = "grafana_base_url"
+        private const val KEY_NEWRELIC_API_KEY = "newrelic_api_key"
+        private const val KEY_NEWRELIC_ACCOUNT_ID = "newrelic_account_id"
     }
 }
 
