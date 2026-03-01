@@ -83,3 +83,28 @@ fun EmptyState(
         )
     }
 }
+
+@Composable
+fun StatusIndicator(
+    color: Color,
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = CircleShape,
+        color = color.copy(alpha = 0.1f),
+    ) {
+        Box(
+            modifier = Modifier
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = color,
+            )
+        }
+    }
+}
