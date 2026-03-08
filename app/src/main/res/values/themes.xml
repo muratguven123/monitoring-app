@@ -1,0 +1,16 @@
+<resources>
+    <!-- Base application theme — Compose manages colours, this only sets window background -->
+    <style name="Theme.MonitoringDashboard" parent="android:Theme.Material.NoTitleBar">
+        <item name="android:windowBackground">#111216</item>
+        <item name="android:statusBarColor">#111216</item>
+        <item name="android:navigationBarColor">#111216</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <!-- Splash screen theme -->
+    <style name="Theme.MonitoringDashboard.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#111216</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.MonitoringDashboard</item>
+    </style>
+</resources>
