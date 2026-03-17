@@ -1,0 +1,88 @@
+version: "3.9"
+
+# ════════════════════════════════════════════════════════════════════════════
+#  Monitoring Dashboard — Test Ortamı
+#
+#  Servisler:
+#    grafana      → port 3000   (gerçek Grafana)
+#    prometheus   → port 9090   (metrik kaynağı)
+#    mock-newrelic→ port 5000   (sahte New Relic API)
+#
+#  Başlatmak için:
+#    docker compose up -d
+#
+#  API bilgilerini almak için:
+#    ./setup.sh        (macOS / Linux)
+#    setup.bat         (Windows)
+# ════════════════════════════════════════════════════════════════════════════
+
+services:
+
+  # ── Grafana ──────────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: monitoring-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: monitoring123
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      # Service account token otomatik oluşturulsun
+      GF_FEATURE_TOGGLES_ENABLE: "serviceAccounts"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ── Prometheus ───────────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: monitoring-prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-storage:/prometheus
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ── Mock New Relic API ───────────────────────────────────────────────────
+  mock-newrelic:
+    build: ./mock-newrelic
+    container_name: monitoring-mock-newrelic
+    ports:
+      - "5000:5000"
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:5000/v2/applications.json')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  grafana-storage:
+  prometheus-storage:
+
+networks:
+  monitoring:
+    driver: bridge
