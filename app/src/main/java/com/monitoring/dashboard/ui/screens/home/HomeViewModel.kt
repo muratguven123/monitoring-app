@@ -29,8 +29,7 @@ data class HomeUiState(
     val newRelicApps: List<NewRelicApplicationDto> = emptyList(),
     val newRelicAppsError: String? = null,
     val openViolations: List<AlertViolationDto> = emptyList(),
-    /** Countdown in seconds until the next automatic refresh (for UI display). */
-    val secondsUntilRefresh: Int = AUTO_REFRESH_INTERVAL_SECONDS,
+    val secondsUntilRefresh: Int = HomeViewModel.AUTO_REFRESH_INTERVAL_SECONDS,
 )
 
 @HiltViewModel
