@@ -198,6 +198,15 @@ UI (Compose Screens + ViewModels)
 - **Domain Layer** — Use cases encapsulate business logic and are injected via Hilt.
 - **Data Layer** — Repository pattern with remote (Retrofit) and local (Room) data sources. `NetworkResult` wrapper for consistent error handling.
 
+
+
+<img width="1080" height="2400" alt="Screenshot_20260317_220031" src="https://github.com/user-attachments/assets/6f89c716-1738-4bb9-bba5-c33e071ac333" />
+
+
+<img width="1080" height="2400" alt="Screenshot_20260317_220018" src="https://github.com/user-attachments/assets/12a0ecb7-6214-49de-bf55-e2f08b54f940" />
+
+<img width="1080" height="2400" alt="Screenshot_20260317_220452" src="https://github.com/user-attachments/assets/6f412cff-acda-49a1-abcf-ef84e63d108c" />
+
 ## License
 
 This project is provided as-is for educational and internal use.
