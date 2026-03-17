@@ -207,6 +207,9 @@ UI (Compose Screens + ViewModels)
 
 <img width="1080" height="2400" alt="Screenshot_20260317_220452" src="https://github.com/user-attachments/assets/6f412cff-acda-49a1-abcf-ef84e63d108c" />
 
+<img width="1080" height="2400" alt="Screenshot_20260317_224419" src="https://github.com/user-attachments/assets/6f73b061-62aa-4832-a8f2-dfaa6d4b9d9c" />
+
+
 ## License
 
 This project is provided as-is for educational and internal use.
