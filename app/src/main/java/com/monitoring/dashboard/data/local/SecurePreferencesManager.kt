@@ -63,6 +63,30 @@ class SecurePreferencesManager @Inject constructor(
     fun getNewRelicAccountId(): String? =
         prefs.getString(KEY_NEWRELIC_ACCOUNT_ID, null)
 
+    // ── Alert Violation Snapshot (for notification diffing) ───────────────
+
+    /**
+     * Persists the set of currently open violation IDs so that the next
+     * [com.monitoring.dashboard.worker.AlertMonitorWorker] run can detect
+     * newly appeared violations and fire a notification only for those.
+     */
+    fun saveLastKnownViolationIds(ids: Set<Long>) {
+        // Serialise as a comma-separated string; empty set → empty string
+        prefs.edit()
+            .putString(KEY_LAST_VIOLATION_IDS, ids.joinToString(","))
+            .apply()
+    }
+
+    /**
+     * Returns the violation-ID snapshot saved by [saveLastKnownViolationIds],
+     * or an empty set if no snapshot exists yet (first run).
+     */
+    fun getLastKnownViolationIds(): Set<Long> {
+        val raw = prefs.getString(KEY_LAST_VIOLATION_IDS, null) ?: return emptySet()
+        if (raw.isBlank()) return emptySet()
+        return raw.split(",").mapNotNull { it.toLongOrNull() }.toSet()
+    }
+
     // ── General ────────────────────────────────────────────────────────────
 
     fun clearAll() {
@@ -75,6 +99,7 @@ class SecurePreferencesManager @Inject constructor(
         private const val KEY_GRAFANA_BASE_URL = "grafana_base_url"
         private const val KEY_NEWRELIC_API_KEY = "newrelic_api_key"
         private const val KEY_NEWRELIC_ACCOUNT_ID = "newrelic_account_id"
+        private const val KEY_LAST_VIOLATION_IDS = "last_known_violation_ids"
     }
 }
 
