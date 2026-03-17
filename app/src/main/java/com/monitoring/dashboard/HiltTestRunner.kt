@@ -1,22 +1,4 @@
 package com.monitoring.dashboard
 
-import android.app.Application
-import android.content.Context
-import androidx.test.runner.AndroidJUnitRunner
-import dagger.hilt.android.testing.HiltTestApplication
-import kotlin.jvm.java
-
-/**
- * Custom test runner for Hilt-based instrumented tests.
- * Enables Hilt dependency injection for instrumented test classes.
- */
-class HiltTestRunner : AndroidJUnitRunner() {
-    override fun newApplication(
-        cl: ClassLoader?,
-        className: String?,
-        context: Context?,
-    ): Application {
-        return super.newApplication(cl, HiltTestApplication::class.java.name, context)
-    }
-}
-
+// This file was removed because it was in the wrong directory (main instead of androidTest).
+// The correct file is already in app/src/androidTest/java/com/monitoring/dashboard/HiltTestRunner.kt

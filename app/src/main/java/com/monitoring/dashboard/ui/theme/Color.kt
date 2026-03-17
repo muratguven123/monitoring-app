@@ -7,6 +7,9 @@ val OrangeGrafana   = Color(0xFFFF7C00)
 val OrangeGrafanaLight = Color(0xFFFFAA4C)
 val OrangeContainer = Color(0xFF3D2200)
 
+val GrafanaOrange = OrangeGrafana
+val NewRelicGreen = Color(0xFF00AC69)
+
 // ── Dark surface hierarchy ────────────────────────────────────────────────────
 val Background      = Color(0xFF111216)
 val SurfaceDim      = Color(0xFF181B1F)
@@ -26,6 +29,12 @@ val GreenOk         = Color(0xFF73BF69)
 val RedError        = Color(0xFFF2495C)
 val YellowWarning   = Color(0xFFFFB357)
 val BlueInfo        = Color(0xFF5794F2)
+val GrayUnknown     = Color(0xFF8E8E8E)
+
+val StatusHealthy = GreenOk
+val StatusWarning = YellowWarning
+val StatusCritical = RedError
+val StatusGray = GrayUnknown
 
 // ── Panel type accent colours ─────────────────────────────────────────────────
 val PurpleStat      = Color(0xFFB877D9)
