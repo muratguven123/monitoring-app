@@ -69,8 +69,17 @@ fun HomeScreen(
                     text = "Monitoring Dashboard",
                     style = MaterialTheme.typography.headlineMedium,
                 )
-                IconButton(onClick = { viewModel.refresh() }) {
-                    Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Countdown badge – shows seconds until next auto-refresh
+                    Text(
+                        text = "${uiState.secondsUntilRefresh}s",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    IconButton(onClick = { viewModel.refresh() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                    }
                 }
             }
         }
