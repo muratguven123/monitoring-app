@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Context
 import androidx.test.runner.AndroidJUnitRunner
 import dagger.hilt.android.testing.HiltTestApplication
-import kotlin.jvm.java
 
 /**
  * Custom test runner for Hilt-based instrumented tests.
@@ -19,4 +18,3 @@ class HiltTestRunner : AndroidJUnitRunner() {
         return super.newApplication(cl, HiltTestApplication::class.java.name, context)
     }
 }
-

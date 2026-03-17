@@ -1,6 +1,6 @@
 <resources>
     <!-- Base application theme — Compose manages colours, this only sets window background -->
-    <style name="Theme.MonitoringDashboard" parent="android:Theme.Material.NoTitleBar">
+    <style name="Theme.MonitoringDashboard" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">#111216</item>
         <item name="android:statusBarColor">#111216</item>
         <item name="android:navigationBarColor">#111216</item>
