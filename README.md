@@ -28,7 +28,7 @@ Bu sayede servis durumunu, uygulama performansını ve alarmları telefondan hı
 - Android Studio (önerilen)
 - `gradle/wrapper/gradle-wrapper.jar` dosyası
 
-> Not: Bu JAR dosyası yoksa projeyi Android Studio ile açarak otomatik indirebilir veya proje kökünde `gradle wrapper` çalıştırabilirsiniz.
+> Not: Bu JAR dosyası yoksa projeyi Android Studio ile açarak otomatik indirebilirsiniz veya proje kökünde `gradle wrapper` çalıştırabilirsiniz.
 
 ### 2) Projeyi klonlayın
 
@@ -53,7 +53,7 @@ gradlew.bat build
 ./gradlew installDebug
 ```
 
-İsterseniz Android Studio içindeki **Run** butonu ile de çalıştırabilirsiniz.
+İsterseniz Android Studio içindeki **"Run"** düğmesi ile de çalıştırabilirsiniz.
 
 ## İlk Açılışta Yapılacaklar
 
