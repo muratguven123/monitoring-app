@@ -1,202 +1,299 @@
-# Monitoring Dashboard
+# 📊 Monitoring Dashboard
 
-A native Android application built with **Jetpack Compose** that provides a unified monitoring dashboard. It aggregates data from **Grafana** and **New Relic** into a single mobile interface, allowing you to monitor infrastructure health, application performance, and alerts on the go.
+Android uygulaması — **Grafana** ve **New Relic** verilerini tek ekranda birleştiren, gerçek zamanlı alert bildirimleri ve otomatik yenileme destekli monitoring dashboard'u.
 
-## Features
+---
 
-- **Grafana Integration** — Browse dashboards, view panel details, and check datasource health
-- **New Relic Integration** — Monitor application performance, view metrics (response time, throughput, error rate), and track alerts
-- **Home Dashboard** — Unified overview combining status from all connected services
-- **Settings** — Configure API keys, base URLs, theme preferences, and refresh intervals
-- **Offline Support** — Local caching with Room database for offline access
-- **Secure Storage** — API keys stored via `EncryptedSharedPreferences`
-- **Background Sync** — WorkManager-based background data synchronization and alert notifications
-- **Material 3 UI** — Modern Compose UI with dynamic theming, pull-to-refresh, and native charts (Vico)
+## 📱 Ekranlar
 
-## Tech Stack
+### 🏠 Home Screen
+```
+┌─────────────────────────────────────┐
+│  Monitoring Dashboard          29s 🔄│
+├─────────────────────────────────────┤
+│  ⚠ 2 Open Alert Violations          │
+│  payment-service · HighErrorRate    │
+├─────────────────────────────────────┤
+│  Service Status                     │
+│  ┌────────────┐  ┌────────────┐     │
+│  │  Grafana   │  │ New Relic  │     │
+│  │ ● Connected│  │ ● 5 Apps   │     │
+│  │  v10.2.1   │  │            │     │
+│  └────────────┘  └────────────┘     │
+├─────────────────────────────────────┤
+│  Grafana Dashboards      [See All]  │
+│  🫀 API Overview · General          │
+│  🫀 Infrastructure · Ops            │
+├─────────────────────────────────────┤
+│  New Relic Applications  [See All]  │
+│  📊 payment-service · Java | 145ms  │
+│       | 2.3% errors        ● Red    │
+│  📊 auth-service · Go | 23ms        │
+│       | 0.1% errors        ● Green  │
+└─────────────────────────────────────┘
+│ 🏠 Home │ 📊 Grafana │ 🔍 NR │ ⚙️ │
+```
 
-| Category | Technology |
-|---|---|
-| Language | Kotlin 1.9 |
-| UI | Jetpack Compose (Material 3) |
-| Architecture | MVVM + Clean Architecture |
-| DI | Hilt |
-| Networking | Retrofit + OkHttp |
-| Local DB | Room |
-| Async | Kotlin Coroutines + Flow |
-| Charts | Vico |
-| Images | Coil |
-| Navigation | Jetpack Navigation Compose |
-| Background Work | WorkManager |
-| Security | AndroidX Security Crypto |
-| Preferences | DataStore |
-| Logging | Timber |
-| Build System | Gradle 8.5 (Kotlin DSL) + Version Catalog |
-| Min SDK | 26 (Android 8.0) |
-| Target SDK | 34 (Android 14) |
+> **Sağ üstteki sayaç** (29s, 28s…) bir sonraki otomatik yenilemeye kalan süreyi gösterir.
 
-## Project Structure
+---
+
+### 🟠 Grafana — Dashboard Listesi
+```
+┌─────────────────────────────────────┐
+│  Grafana Dashboards                 │
+│  🔍 Search dashboards...            │
+├─────────────────────────────────────┤
+│  🫀 API Overview                    │
+│     General                         │
+│  🫀 Infrastructure Health           │
+│     Ops                             │
+│  🫀 Database Performance            │
+│     DB Team                         │
+│  🫀 Kubernetes Cluster              │
+│     Platform                        │
+└─────────────────────────────────────┘
+```
+
+### 🟠 Grafana — Dashboard Detay
+```
+┌─────────────────────────────────────┐
+│  ← API Overview                     │
+├─────────────────────────────────────┤
+│  Panel: Request Rate                │
+│  ┌─────────────────────────────┐   │
+│  │  ████                       │   │
+│  │  ████ ████                  │   │
+│  │  ████ ████ ███              │   │
+│  └─────────────────────────────┘   │
+│  Panel: Error Rate                  │
+│  ┌─────────────────────────────┐   │
+│  │  Type: graph                │   │
+│  │  Datasource: Prometheus     │   │
+│  └─────────────────────────────┘   │
+└─────────────────────────────────────┘
+```
+
+---
+
+### 🟢 New Relic — Uygulama Listesi
+```
+┌─────────────────────────────────────┐
+│  New Relic Applications             │
+│  🔍 Search applications...          │
+├─────────────────────────────────────┤
+│  📊 payment-service                 │
+│     Java | 145ms | 2.3 rpm          │
+│     | 2.3% err             ● Red    │
+│  📊 auth-service                    │
+│     Go | 23ms | 450.2 rpm           │
+│     | 0.1% err             ● Green  │
+│  📊 notification-worker             │
+│     Java | 67ms | 120.0 rpm         │
+│     | 0.0% err             ● Green  │
+│  📊 legacy-monolith                 │
+│     Ruby | 890ms | 88.5 rpm         │
+│     | 5.1% err             ● Orange │
+└─────────────────────────────────────┘
+```
+
+### 🟢 New Relic — Uygulama Detay
+```
+┌─────────────────────────────────────┐
+│  ← payment-service                  │
+├─────────────────────────────────────┤
+│  payment-service    ● Critical      │
+│  Java               Not Reporting   │
+├─────────────────────────────────────┤
+│  Performance Summary                │
+│  ┌───────────┬──────────┬────────┐  │
+│  │ Response  │Throughput│  Err   │  │
+│  │  145 ms   │ 23.4 rpm │ 2.30% │  │
+│  ├───────────┼──────────┼────────┤  │
+│  │   Apdex   │  Hosts   │  Inst. │  │
+│  │   0.85    │    3     │   12   │  │
+│  └───────────┴──────────┴────────┘  │
+├─────────────────────────────────────┤
+│  Open Violations (2)                │
+│  🔴 HighErrorRate                   │
+│     payment-alerts                  │
+│  ⚠️  SlowResponseTime               │
+│     sla-policy                      │
+└─────────────────────────────────────┘
+```
+
+---
+
+### ⚙️ Settings
+```
+┌─────────────────────────────────────┐
+│  Settings                           │
+├─────────────────────────────────────┤
+│  Grafana Configuration              │
+│  Base URL                           │
+│  https://grafana.yourcompany.com    │
+│  API Key                            │
+│  ••••••••••••••••••••••             │
+├─────────────────────────────────────┤
+│  New Relic Configuration            │
+│  API Key                            │
+│  ••••••••••••••••••••••             │
+│  Account ID                         │
+│  1234567                            │
+├─────────────────────────────────────┤
+│          [  Save Settings  ]        │
+└─────────────────────────────────────┘
+```
+
+---
+
+## 🔔 Bildirimler
+
+Uygulama kapalıyken dahi arka planda New Relic alert violation'larını izler. Yeni bir alert geldiğinde sistem bildirimi gösterilir:
 
 ```
-app/src/main/java/com/monitoring/dashboard/
-├── MonitoringApp.kt                  # Application class (Hilt entry point)
-├── MainActivity.kt                   # Single Activity host
-├── HiltTestRunner.kt                 # Custom test runner for Hilt
+┌────────────────────────────────────┐
+│ ⚠ Monitoring Dashboard             │
+│                                    │
+│ ⚠ 1 New Alert Violation            │
+│ payment-alerts · HighErrorRate     │
+└────────────────────────────────────┘
+```
+
+Bildirime tıklamak uygulamayı açar ve Home ekranına yönlendirir.
+
+### Bildirim Kanalları
+
+| Kanal | Önem | Ne Zaman |
+|---|---|---|
+| Critical Alert Violations | Yüksek (titreşim + ışık) | `priority: critical` violation'larda |
+| Warning Alert Violations | Normal | `priority: warning` violation'larda |
+
+---
+
+## ⏱ Otomatik Yenileme
+
+Home ekranı verileri **30 saniyede bir** otomatik olarak yeniler. Yenileme butonu yanındaki sayaç (`29s`, `28s`…) bir sonraki yenilemeye kalan süreyi gösterir. Manuel yenilemede sayaç sıfırlanır.
+
+---
+
+## 🏗 Mimari
+
+```
+com.monitoring.dashboard
 ├── data/
 │   ├── local/
-│   │   └── SecurePreferencesManager.kt
+│   │   └── SecurePreferencesManager    # API key'leri EncryptedSharedPreferences'ta saklar
 │   ├── remote/
-│   │   ├── GrafanaApiService.kt      # Grafana REST API
-│   │   ├── NewRelicApiService.kt     # New Relic REST API
-│   │   ├── dto/                      # Data Transfer Objects
-│   │   │   ├── GrafanaDashboardDetailDto.kt
-│   │   │   ├── GrafanaDashboardSearchDto.kt
-│   │   │   ├── GrafanaDatasourceDto.kt
-│   │   │   ├── GrafanaHealthDto.kt
-│   │   │   ├── GrafanaPanelDto.kt
-│   │   │   └── newrelic/
-│   │   │       ├── NewRelicAlertDto.kt
-│   │   │       ├── NewRelicApplicationDto.kt
-│   │   │       └── NewRelicMetricDto.kt
-│   │   ├── interceptor/
-│   │   │   ├── AuthInterceptor.kt
-│   │   │   ├── DynamicBaseUrlInterceptor.kt
-│   │   │   └── NewRelicAuthInterceptor.kt
-│   │   └── util/
-│   │       └── NetworkResult.kt
+│   │   ├── GrafanaApiService           # Retrofit — Grafana REST API
+│   │   ├── NewRelicApiService          # Retrofit — New Relic REST API v2
+│   │   ├── dto/                        # API response DTO'ları
+│   │   └── interceptor/                # Auth header interceptor'ları
 │   └── repository/
-│       ├── GrafanaRepository.kt
-│       ├── GrafanaRepositoryImpl.kt
-│       ├── NewRelicRepository.kt
-│       └── NewRelicRepositoryImpl.kt
+│       ├── GrafanaRepository           # Grafana veri katmanı
+│       └── NewRelicRepository          # New Relic veri katmanı
 ├── di/
-│   └── NetworkModule.kt              # Hilt network dependency graph
+│   ├── NetworkModule                   # Hilt: Retrofit, OkHttp, Repository
+│   └── WorkManagerModule               # Hilt: WorkManager
 ├── domain/
-│   ├── model/
-│   │   ├── Dashboard.kt
-│   │   ├── DashboardDetail.kt
-│   │   └── GrafanaHealth.kt
-│   └── usecase/
-│       ├── CheckGrafanaHealthUseCase.kt
-│       ├── GetDashboardDetailUseCase.kt
-│       └── GetDashboardsUseCase.kt
-└── ui/
-    ├── components/
-    │   ├── LoadingIndicator.kt
-    │   ├── MonitoringCard.kt
-    │   └── ServiceStatusCard.kt
-    ├── navigation/
-    │   ├── NavGraph.kt
-    │   └── Screen.kt
-    ├── screens/
-    │   ├── grafana/
-    │   │   ├── GrafanaDashboardDetailScreen.kt
-    │   │   ├── GrafanaDashboardDetailViewModel.kt
-    │   │   ├── GrafanaDashboardsScreen.kt
-    │   │   └── GrafanaDashboardsViewModel.kt
-    │   ├── home/
-    │   │   ├── HomeScreen.kt
-    │   │   └── HomeViewModel.kt
-    │   ├── newrelic/
-    │   │   ├── NewRelicAppDetailScreen.kt
-    │   │   ├── NewRelicAppDetailViewModel.kt
-    │   │   ├── NewRelicAppsScreen.kt
-    │   │   └── NewRelicAppsViewModel.kt
-    │   └── settings/
-    │       ├── SettingsScreen.kt
-    │       └── SettingsViewModel.kt
-    └── theme/
-        ├── Color.kt
-        ├── Theme.kt
-        └── Type.kt
+│   ├── model/                          # Temiz domain modelleri
+│   └── usecase/                        # Use case'ler
+├── notification/
+│   └── AlertNotificationHelper         # Bildirim kanalları + gösterimi
+├── ui/
+│   ├── MainScreen                      # Scaffold + alt navigasyon çubuğu
+│   ├── components/                     # Paylaşılan Compose component'leri
+│   ├── navigation/
+│   │   ├── AppNavGraph                 # Tam navigasyon grafiği
+│   │   └── Screen                     # Sealed class — rota tanımları
+│   ├── screens/
+│   │   ├── home/                       # Ana ekran + auto-refresh ViewModel
+│   │   ├── grafana/                    # Dashboard listesi + detay
+│   │   ├── newrelic/                   # Uygulama listesi + detay
+│   │   └── settings/                  # Ayarlar ekranı
+│   └── theme/                          # Grafana-dark renk paleti
+└── worker/
+    └── AlertMonitorWorker              # WorkManager — arka plan alert kontrolü
 ```
 
-## Prerequisites
+---
 
-- **Java 17** or newer
-- **Android Studio Hedgehog** (2023.1.1) or newer recommended
-- Gradle wrapper JAR (`gradle/wrapper/gradle-wrapper.jar`) — see [Setup](#setup)
+## 🛠 Teknoloji Stack
 
-## Setup
+| Kategori | Kütüphane |
+|---|---|
+| UI | Jetpack Compose + Material3 |
+| Navigasyon | Navigation Compose |
+| Dependency Injection | Hilt |
+| Ağ | Retrofit 2 + OkHttp 4 + Gson |
+| Arka Plan | WorkManager 2.9 |
+| Güvenli Depolama | EncryptedSharedPreferences |
+| Tercihler | DataStore |
+| Grafikler | Vico (Compose) |
+| Resim Yükleme | Coil |
+| Logging | Timber |
 
-1. **Clone the repository**
+---
 
-   ```bash
-   git clone https://github.com/muratguven123/monitoring-app.git
-   cd monitoring-app
-   ```
+## 🚀 Kurulum
 
-2. **Gradle wrapper JAR**
+### Gereksinimler
 
-   If `gradle/wrapper/gradle-wrapper.jar` is not present, either:
-   - Open the project in **Android Studio** — it downloads the JAR automatically, or
-   - Run a local Gradle installation: `gradle wrapper` in the project root.
+- Android Studio Hedgehog (2023.1.1) veya üstü
+- Android SDK API 26+ (minSdk)
+- Aktif bir Grafana sunucusu
+- New Relic API key'i
 
-3. **Build the project**
-
-   ```bash
-   # Linux / macOS
-   ./gradlew build
-
-   # Windows
-   gradlew.bat build
-   ```
-
-4. **Run on a device or emulator**
-
-   ```bash
-   ./gradlew installDebug
-   ```
-
-   Or use the **Run** button in Android Studio.
-
-## Configuration
-
-API base URLs are configured as `BuildConfig` fields in `app/build.gradle.kts`. Update the values for your environment:
-
-```kotlin
-buildConfigField("String", "GRAFANA_BASE_URL", "\"https://your-grafana-instance.com\"")
-buildConfigField("String", "NEWRELIC_BASE_URL", "\"https://api.newrelic.com\"")
-buildConfigField("String", "NEWRELIC_NERDGRAPH_URL", "\"https://api.newrelic.com/graphql\"")
-buildConfigField("String", "GITHUB_BASE_URL", "\"https://api.github.com\"")
-```
-
-API keys are entered at runtime through the **Settings** screen and stored securely via `EncryptedSharedPreferences`.
-
-## Build Commands
+### Build
 
 ```bash
-# Debug build
+# Debug APK
 ./gradlew assembleDebug
 
-# Release build (with ProGuard/R8)
-./gradlew assembleRelease
-
-# Unit tests
-./gradlew test
-
-# Instrumented tests (requires connected device/emulator)
-./gradlew connectedAndroidTest
-
-# Clean
-./gradlew clean
+# Cihaza yükle
+./gradlew installDebug
 ```
 
-## Architecture
+### API Yapılandırması
 
-The app follows **MVVM + Clean Architecture**:
+Uygulamayı ilk açışta **Settings** sekmesine gidin ve aşağıdakileri girin:
 
 ```
-UI (Compose Screens + ViewModels)
-        ↓
-   Domain (Use Cases + Models)
-        ↓
-   Data (Repositories → Remote API + Local Cache)
+Grafana Base URL  : https://grafana.sirketiniz.com
+Grafana API Key   : glsa_xxxxxxxxxxxxxxxxxxxx
+New Relic API Key : NRAK-xxxxxxxxxxxxxxxxxxxx
+New Relic Account : 1234567
 ```
 
-- **UI Layer** — Jetpack Compose screens observe `StateFlow` from ViewModels.
-- **Domain Layer** — Use cases encapsulate business logic and are injected via Hilt.
-- **Data Layer** — Repository pattern with remote (Retrofit) and local (Room) data sources. `NetworkResult` wrapper for consistent error handling.
+API key'ler cihazda **AES-256-GCM ile şifreli** olarak saklanır.
+
+---
+
+## 🔧 Geliştirici Notları
+
+### WorkManager Testi
+
+Alert worker'ı hemen çalıştırmak için:
+```bash
+adb shell am broadcast \
+  -a "androidx.work.impl.background.systemalarm.RescheduleReceiver" \
+  -p "com.monitoring.dashboard"
+```
+
+### Bildirim Testi
+
+Test cihazında bildirim iznini kontrol edin:
+```bash
+adb shell dumpsys notification --noredact | grep monitoring
+```
+
+### Hilt + WorkManager Entegrasyonu
+
+`MonitoringApp`, `Configuration.Provider` implement eder. Bu sayede `@HiltWorker` ile işaretlenmiş worker sınıfları Hilt üzerinden dependency injection alır. WorkManager'ın default auto-init'i `AndroidManifest.xml`'de devre dışı bırakılmıştır.
+
+---
+
+## 📋 Özellik Durumu
 
 
 
@@ -207,6 +304,15 @@ UI (Compose Screens + ViewModels)
 
 <img width="1080" height="2400" alt="Screenshot_20260317_220452" src="https://github.com/user-attachments/assets/6f412cff-acda-49a1-abcf-ef84e63d108c" />
 
-## License
-
-This project is provided as-is for educational and internal use.
+| Özellik | Durum |
+|---|---|
+| Grafana dashboard listesi | ✅ |
+| Grafana dashboard detay (panel listesi) | ✅ |
+| New Relic uygulama listesi + arama | ✅ |
+| New Relic uygulama detay + metrikler | ✅ |
+| New Relic open violations | ✅ |
+| Home ekranı — servis durumu özeti | ✅ |
+| Otomatik yenileme (30 sn) + geri sayım | ✅ |
+| Arka plan alert bildirimleri | ✅ |
+| API key güvenli depolama | ✅ |
+| Alt navigasyon çubuğu | ✅ |

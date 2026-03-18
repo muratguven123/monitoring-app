@@ -1,18 +1,19 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.kotlin.compose)
+    kotlin("kapt")
 }
 
 android {
     namespace = "com.monitoring.dashboard"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.monitoring.dashboard"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
 
@@ -22,18 +23,14 @@ android {
             useSupportLibrary = true
         }
 
-        // Room schema export for migration testing
-        ksp {
-            arg("room.schemaLocation", "$projectDir/schemas")
-        }
     }
 
     buildTypes {
         debug {
             isMinifyEnabled = false
-            buildConfigField("String", "GRAFANA_BASE_URL", "\"https://grafana.example.com\"")
-            buildConfigField("String", "NEWRELIC_BASE_URL", "\"https://api.newrelic.com\"")
-            buildConfigField("String", "NEWRELIC_NERDGRAPH_URL", "\"https://api.newrelic.com/graphql\"")
+            buildConfigField("String", "GRAFANA_BASE_URL", "\"http://10.0.2.2:3000\"")
+            buildConfigField("String", "NEWRELIC_BASE_URL", "\"http://10.0.2.2:5000\"")
+            buildConfigField("String", "NEWRELIC_NERDGRAPH_URL", "\"http://10.0.2.2:5000/graphql\"")
             buildConfigField("String", "GITHUB_BASE_URL", "\"https://api.github.com\"")
         }
         release {
@@ -68,10 +65,6 @@ android {
         buildConfig = true
     }
 
-    composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get()
-    }
-
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -84,6 +77,13 @@ android {
         unitTests {
             isIncludeAndroidResources = true
         }
+    }
+}
+
+kapt {
+    // Room schema export for migration testing
+    arguments {
+        arg("room.schemaLocation", "$projectDir/schemas")
     }
 }
 
@@ -106,10 +106,10 @@ dependencies {
 
     // Hilt (Dependency Injection)
     implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
+    kapt(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
     implementation(libs.hilt.work)
-    ksp(libs.hilt.work.compiler)
+    kapt(libs.hilt.work.compiler)
 
     // Network (Retrofit + OkHttp) — Grafana, New Relic, GitHub API
     implementation(libs.bundles.network)
@@ -119,7 +119,7 @@ dependencies {
 
     // Room (Offline Cache)
     implementation(libs.bundles.room)
-    ksp(libs.room.compiler)
+    kapt(libs.room.compiler)
 
     // WorkManager (Background Sync & Alert Notifications)
     implementation(libs.work.runtime)
@@ -149,5 +149,5 @@ dependencies {
     // Instrumented Testing
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.bundles.android.testing)
-    kspAndroidTest(libs.hilt.compiler)
+    kaptAndroidTest(libs.hilt.compiler)
 }
