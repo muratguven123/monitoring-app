@@ -133,7 +133,7 @@ Data (Repository + Remote/Local)
 Aşağıdaki sonuçlar, ekran görüntülerindeki örnek akıştan elde edilen uygulama çıktısını özetler:
 
 - **Servis durumları** tek ekranda listelenip hızlıca kontrol edilebiliyor.
-- **New Relic metrikleri** (yanıt süresi, throughput, hata oranı) mobilde okunabilir biçimde görüntüleniyor.
+- **New Relic metrikleri** (yanıt süresi, throughput, hata oranı) mobilde okunabilir biçimde görüntüleniyor(henüz değil).
 - **Grafana panel verileri** uygulama içinden takip edilebiliyor.
 - **Ayarlar ekranı** üzerinden API/base URL değerleri güncellenerek veri kaynakları yönetilebiliyor.
 
