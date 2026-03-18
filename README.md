@@ -28,7 +28,7 @@ Bu sayede servis durumunu, uygulama performansını ve alarmları telefondan hı
 - Android Studio (önerilen)
 - `gradle/wrapper/gradle-wrapper.jar` dosyası
 
-> Not: Bu JAR dosyası yoksa projeyi Android Studio ile açarak otomatik indirebilirsiniz veya proje kökünde `gradle wrapper` çalıştırabilirsiniz.
+> Not: Bu JAR dosyası yoksa projeyi Android Studio ile açarak otomatik indirebilirsiniz. Alternatif olarak, bilgisayarınızda yerel Gradle kuruluysa proje kökünde `gradle wrapper` çalıştırabilirsiniz.
 
 ### 2) Projeyi klonlayın
 
