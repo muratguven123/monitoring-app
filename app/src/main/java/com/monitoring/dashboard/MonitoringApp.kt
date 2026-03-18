@@ -26,7 +26,6 @@ class MonitoringApp : Application(), Configuration.Provider {
 
     @Inject lateinit var workerFactory: HiltWorkerFactory
     @Inject lateinit var notificationHelper: AlertNotificationHelper
-    @Inject lateinit var workManager: WorkManager
 
     // WorkManager configuration – must be provided before WorkManager is used
     override val workManagerConfiguration: Configuration
@@ -45,7 +44,8 @@ class MonitoringApp : Application(), Configuration.Provider {
         notificationHelper.createNotificationChannels()
 
         // Schedule background alert monitoring (keeps existing schedule if already queued)
-        AlertMonitorWorker.schedule(workManager)
+        // Avoid injecting WorkManager into Application itself; initialize after app startup.
+        AlertMonitorWorker.schedule(WorkManager.getInstance(applicationContext))
     }
 }
 

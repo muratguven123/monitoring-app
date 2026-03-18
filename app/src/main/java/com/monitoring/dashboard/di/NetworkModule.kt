@@ -17,6 +17,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -92,9 +93,11 @@ object NetworkModule {
         @GrafanaClient okHttpClient: OkHttpClient,
         securePreferencesManager: SecurePreferencesManager,
     ): Retrofit {
-        val baseUrl = securePreferencesManager.getGrafanaBaseUrl()
-            ?.ensureTrailingSlash()
-            ?: BuildConfig.GRAFANA_BASE_URL.ensureTrailingSlash()
+        val baseUrl = securePreferencesManager
+            .getGrafanaBaseUrl()
+            ?.toRetrofitBaseUrlOrNull()
+            ?: BuildConfig.GRAFANA_BASE_URL.toRetrofitBaseUrlOrNull()
+            ?: "http://10.0.2.2:3000/"
 
         return Retrofit.Builder()
             .baseUrl(baseUrl)
@@ -170,4 +173,25 @@ object NetworkModule {
 
     private fun String.ensureTrailingSlash(): String =
         if (endsWith("/")) this else "$this/"
+
+    /**
+     * Accepts pasted Grafana links and normalizes them to Retrofit-safe origin URL.
+     * Example: https://host/goto/abc?orgId=1  -> https://host/
+     */
+    private fun String.toRetrofitBaseUrlOrNull(): String? {
+        val raw = trim()
+        if (raw.isBlank()) return null
+
+        val withScheme = if (raw.startsWith("http://") || raw.startsWith("https://")) {
+            raw
+        } else {
+            "https://$raw"
+        }
+
+        val parsed = withScheme.toHttpUrlOrNull() ?: return null
+        val defaultPort = (parsed.scheme == "http" && parsed.port == 80) ||
+            (parsed.scheme == "https" && parsed.port == 443)
+        val portPart = if (defaultPort) "" else ":${parsed.port}"
+        return "${parsed.scheme}://${parsed.host}$portPart/"
+    }
 }
