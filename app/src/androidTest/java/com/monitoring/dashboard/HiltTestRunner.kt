@@ -5,10 +5,7 @@ import android.content.Context
 import androidx.test.runner.AndroidJUnitRunner
 import dagger.hilt.android.testing.HiltTestApplication
 
-/**
- * Custom test runner for Hilt-based instrumented tests.
- * Enables Hilt dependency injection for instrumented test classes.
- */
+
 class HiltTestRunner : AndroidJUnitRunner() {
     override fun newApplication(
         cl: ClassLoader?,

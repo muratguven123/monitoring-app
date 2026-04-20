@@ -7,6 +7,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.monitoring.dashboard.ui.screens.demo.DemoPreviewScreen
 import com.monitoring.dashboard.ui.screens.grafana.GrafanaDashboardDetailScreen
 import com.monitoring.dashboard.ui.screens.grafana.GrafanaDashboardsScreen
 import com.monitoring.dashboard.ui.screens.home.HomeScreen
@@ -29,6 +30,7 @@ fun AppNavGraph(
     navController: NavHostController,
     startDestination: String = Screen.Home.route,
     modifier: Modifier = Modifier,
+    onNavigateToDemo: (() -> Unit)? = null,
 ) {
     NavHost(
         navController    = navController,
@@ -47,6 +49,14 @@ fun AppNavGraph(
                 onNavigateToNewRelicApp = { appId ->
                     navController.navigate(Screen.NewRelicAppDetail.createRoute(appId))
                 },
+                onNavigateToDemo = { navController.navigate(Screen.Demo.route) },
+            )
+        }
+
+        // ── Demo Preview ───────────────────────────────────────────────────
+        composable(Screen.Demo.route) {
+            DemoPreviewScreen(
+                onBackClick = { navController.popBackStack() },
             )
         }
 

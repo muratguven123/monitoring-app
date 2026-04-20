@@ -31,7 +31,7 @@ class SecurePreferencesManager @Inject constructor(
         )
     }
 
-    // ── Grafana ────────────────────────────────────────────────────────────
+
 
     fun saveGrafanaApiKey(apiKey: String) {
         prefs.edit().putString(KEY_GRAFANA_API_KEY, apiKey).apply()
@@ -47,7 +47,7 @@ class SecurePreferencesManager @Inject constructor(
     fun getGrafanaBaseUrl(): String? =
         prefs.getString(KEY_GRAFANA_BASE_URL, null)
 
-    // ── New Relic ──────────────────────────────────────────────────────────
+
 
     fun saveNewRelicApiKey(apiKey: String) {
         prefs.edit().putString(KEY_NEWRELIC_API_KEY, apiKey).apply()
@@ -65,11 +65,7 @@ class SecurePreferencesManager @Inject constructor(
 
     // ── Alert Violation Snapshot (for notification diffing) ───────────────
 
-    /**
-     * Persists the set of currently open violation IDs so that the next
-     * [com.monitoring.dashboard.worker.AlertMonitorWorker] run can detect
-     * newly appeared violations and fire a notification only for those.
-     */
+
     fun saveLastKnownViolationIds(ids: Set<Long>) {
         // Serialise as a comma-separated string; empty set → empty string
         prefs.edit()
@@ -77,17 +73,14 @@ class SecurePreferencesManager @Inject constructor(
             .apply()
     }
 
-    /**
-     * Returns the violation-ID snapshot saved by [saveLastKnownViolationIds],
-     * or an empty set if no snapshot exists yet (first run).
-     */
+
     fun getLastKnownViolationIds(): Set<Long> {
         val raw = prefs.getString(KEY_LAST_VIOLATION_IDS, null) ?: return emptySet()
         if (raw.isBlank()) return emptySet()
         return raw.split(",").mapNotNull { it.toLongOrNull() }.toSet()
     }
 
-    // ── General ────────────────────────────────────────────────────────────
+
 
     fun clearAll() {
         prefs.edit().clear().apply()
