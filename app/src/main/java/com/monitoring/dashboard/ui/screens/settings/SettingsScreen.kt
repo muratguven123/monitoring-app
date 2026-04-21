@@ -18,10 +18,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.monitoring.dashboard.R
 
 @Composable
 fun SettingsScreen(
@@ -36,7 +38,7 @@ fun SettingsScreen(
     ) {
         item {
             Text(
-                text = "Settings",
+                text = stringResource(R.string.screen_settings_title),
                 style = MaterialTheme.typography.headlineMedium,
             )
         }
@@ -44,7 +46,7 @@ fun SettingsScreen(
         // ── Grafana Settings ────────────────────────────────────────
         item {
             Text(
-                text = "Grafana Configuration",
+                text = stringResource(R.string.settings_grafana_section),
                 style = MaterialTheme.typography.titleMedium,
                 color = com.monitoring.dashboard.ui.theme.GrafanaOrange,
                 modifier = Modifier.padding(top = 8.dp),
@@ -55,8 +57,8 @@ fun SettingsScreen(
             OutlinedTextField(
                 value = uiState.grafanaBaseUrl,
                 onValueChange = viewModel::onGrafanaBaseUrlChanged,
-                label = { Text("Grafana Base URL") },
-                placeholder = { Text("https://grafana.example.com") },
+                label = { Text(stringResource(R.string.settings_grafana_url_label)) },
+                placeholder = { Text(stringResource(R.string.settings_grafana_url_placeholder)) },
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
@@ -67,8 +69,8 @@ fun SettingsScreen(
             OutlinedTextField(
                 value = uiState.grafanaApiKey,
                 onValueChange = viewModel::onGrafanaApiKeyChanged,
-                label = { Text("Grafana API Key") },
-                placeholder = { Text("Bearer token or API key") },
+                label = { Text(stringResource(R.string.settings_grafana_key_label)) },
+                placeholder = { Text(stringResource(R.string.settings_grafana_key_placeholder)) },
                 visualTransformation = PasswordVisualTransformation(),
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
@@ -79,7 +81,7 @@ fun SettingsScreen(
         // ── New Relic Settings ──────────────────────────────────────
         item {
             Text(
-                text = "New Relic Configuration",
+                text = stringResource(R.string.settings_newrelic_section),
                 style = MaterialTheme.typography.titleMedium,
                 color = com.monitoring.dashboard.ui.theme.NewRelicGreen,
                 modifier = Modifier.padding(top = 8.dp),
@@ -90,8 +92,8 @@ fun SettingsScreen(
             OutlinedTextField(
                 value = uiState.newRelicApiKey,
                 onValueChange = viewModel::onNewRelicApiKeyChanged,
-                label = { Text("New Relic API Key") },
-                placeholder = { Text("User API key (NRAK-...)") },
+                label = { Text(stringResource(R.string.settings_newrelic_key_label)) },
+                placeholder = { Text(stringResource(R.string.settings_newrelic_key_placeholder)) },
                 visualTransformation = PasswordVisualTransformation(),
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
@@ -103,8 +105,8 @@ fun SettingsScreen(
             OutlinedTextField(
                 value = uiState.newRelicAccountId,
                 onValueChange = viewModel::onNewRelicAccountIdChanged,
-                label = { Text("New Relic Account ID") },
-                placeholder = { Text("e.g. 1234567") },
+                label = { Text(stringResource(R.string.settings_newrelic_account_label)) },
+                placeholder = { Text(stringResource(R.string.settings_newrelic_account_placeholder)) },
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
@@ -120,7 +122,10 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
             ) {
-                Text(if (uiState.isSaved) "Saved!" else "Save Settings")
+                Text(
+                    if (uiState.isSaved) stringResource(R.string.action_saved)
+                    else stringResource(R.string.action_save),
+                )
             }
         }
 
@@ -130,14 +135,14 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
             ) {
-                Text("Clear All Settings")
+                Text(stringResource(R.string.action_clear_all))
             }
         }
 
         item {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "API keys are stored securely using Android EncryptedSharedPreferences.",
+                text = stringResource(R.string.settings_security_note),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

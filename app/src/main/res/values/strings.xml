@@ -1,3 +1,140 @@
 <resources>
     <string name="app_name">Monitoring Dashboard</string>
+
+    <!-- ── Screen Titles ─────────────────────────────────────────────── -->
+    <string name="screen_home_title">Monitoring Dashboard</string>
+    <string name="screen_settings_title">Settings</string>
+    <string name="screen_grafana_dashboards_title">Grafana Dashboards</string>
+    <string name="screen_newrelic_apps_title">New Relic Applications</string>
+    <string name="screen_newrelic_app_detail_title">Application</string>
+    <string name="screen_grafana_detail_title">Dashboard</string>
+    <string name="screen_demo_title">Monitoring Dashboard</string>
+    <string name="screen_demo_subtitle">Live system overview</string>
+    <string name="screen_demo_badge">DEMO</string>
+
+    <!-- ── Navigation Labels ─────────────────────────────────────────── -->
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_grafana">Grafana</string>
+    <string name="nav_newrelic">New Relic</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- ── Status Messages ───────────────────────────────────────────── -->
+    <string name="status_loading">Loading…</string>
+    <string name="status_connected">Connected</string>
+    <string name="status_disconnected">Disconnected</string>
+    <string name="status_unknown">Unknown</string>
+    <string name="status_healthy">Healthy</string>
+    <string name="status_warning">Warning</string>
+    <string name="status_critical">Critical</string>
+    <string name="status_not_reporting">Not Reporting</string>
+    <string name="status_reporting">Reporting</string>
+    <string name="status_no_api_key">No API Key</string>
+    <string name="status_no_data">No data</string>
+    <string name="status_no_data_reported">No data reported</string>
+    <string name="status_na">N/A</string>
+
+    <!-- ── Action Buttons ────────────────────────────────────────────── -->
+    <string name="action_save">Save Settings</string>
+    <string name="action_saved">Saved!</string>
+    <string name="action_clear_all">Clear All Settings</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_refresh">Refresh</string>
+    <string name="action_back">Back</string>
+    <string name="action_see_all">See All</string>
+    <string name="action_search">Search</string>
+    <string name="action_connect_and_save">Connect &amp; Save</string>
+    <string name="action_connecting">Connecting…</string>
+    <string name="action_hide">Hide</string>
+    <string name="action_show">Show</string>
+
+    <!-- ── Error Messages ────────────────────────────────────────────── -->
+    <string name="error_network">Network error. Please check your connection.</string>
+    <string name="error_unknown">An unknown error occurred.</string>
+    <string name="error_invalid_input">URL and API key cannot be empty.</string>
+    <string name="error_connection_failed">Connection failed</string>
+    <string name="error_load_application">Failed to load application</string>
+
+    <!-- ── Home Screen ───────────────────────────────────────────────── -->
+    <string name="home_demo_banner">Demo Preview — Team Leader Sunumu</string>
+    <string name="home_open_violations">%d Open Alert Violations</string>
+    <string name="home_service_status">Service Status</string>
+    <string name="home_grafana_dashboards">Grafana Dashboards</string>
+    <string name="home_newrelic_apps">New Relic Applications</string>
+    <string name="home_apps_count">%d Apps</string>
+    <string name="home_refresh_countdown">%ds</string>
+
+    <!-- ── Service Types ─────────────────────────────────────────────── -->
+    <string name="service_type_dashboards_metrics">Dashboards &amp; Metrics</string>
+    <string name="service_type_apm_alerts">APM &amp; Alerts</string>
+
+    <!-- ── Grafana Screen ────────────────────────────────────────────── -->
+    <string name="grafana_search_placeholder">Search dashboards…</string>
+    <string name="grafana_empty">No dashboards found</string>
+    <string name="grafana_folder_default">General</string>
+    <string name="grafana_folder_label">Folder: %s</string>
+    <string name="grafana_updated_label">Updated: %s</string>
+    <string name="grafana_panels_count">Panels (%d)</string>
+
+    <!-- ── New Relic Screen ──────────────────────────────────────────── -->
+    <string name="newrelic_search_placeholder">Search applications…</string>
+    <string name="newrelic_empty">No applications found</string>
+    <string name="newrelic_performance_summary">Performance Summary</string>
+    <string name="newrelic_end_user_summary">End User Summary</string>
+    <string name="newrelic_open_violations">Open Violations (%d)</string>
+
+    <!-- ── Metric Labels ─────────────────────────────────────────────── -->
+    <string name="metric_response_time">Response Time</string>
+    <string name="metric_throughput">Throughput</string>
+    <string name="metric_error_rate">Error Rate</string>
+    <string name="metric_apdex_score">Apdex Score</string>
+    <string name="metric_hosts">Hosts</string>
+    <string name="metric_instances">Instances</string>
+    <string name="metric_page_load">Page Load</string>
+    <string name="metric_apdex">Apdex</string>
+    <string name="metric_cpu_usage">CPU Usage</string>
+    <string name="metric_memory">Memory</string>
+    <string name="metric_request_rate">Request Rate</string>
+    <string name="metric_p95_latency">P95 Latency</string>
+    <string name="metric_active_connections">Active Conns.</string>
+
+    <!-- ── Metric Units ──────────────────────────────────────────────── -->
+    <string name="unit_ms">%sms</string>
+    <string name="unit_rpm">%s rpm</string>
+    <string name="unit_ppm">%s ppm</string>
+    <string name="unit_percent">%s%%</string>
+    <string name="unit_errors_percent">%s%% errors</string>
+    <string name="unit_err_percent">%s%% err</string>
+
+    <!-- ── Settings Screen ───────────────────────────────────────────── -->
+    <string name="settings_grafana_section">Grafana Configuration</string>
+    <string name="settings_newrelic_section">New Relic Configuration</string>
+    <string name="settings_grafana_url_label">Grafana Base URL</string>
+    <string name="settings_grafana_url_placeholder">https://grafana.example.com</string>
+    <string name="settings_grafana_key_label">Grafana API Key</string>
+    <string name="settings_grafana_key_placeholder">Bearer token or API key</string>
+    <string name="settings_newrelic_key_label">New Relic API Key</string>
+    <string name="settings_newrelic_key_placeholder">User API key (NRAK-…)</string>
+    <string name="settings_newrelic_account_label">New Relic Account ID</string>
+    <string name="settings_newrelic_account_placeholder">e.g. 1234567</string>
+    <string name="settings_security_note">API keys are stored securely using Android EncryptedSharedPreferences.</string>
+
+    <!-- ── Notification Strings ──────────────────────────────────────── -->
+    <string name="notification_channel_critical">Critical Alert Violations</string>
+    <string name="notification_channel_critical_desc">Notifications for critical-priority New Relic alert violations</string>
+    <string name="notification_channel_warning">Warning Alert Violations</string>
+    <string name="notification_channel_warning_desc">Notifications for warning-priority New Relic alert violations</string>
+    <string name="notification_single_violation">⚠ New Alert Violation</string>
+    <string name="notification_multiple_violations">⚠ %d New Alert Violations</string>
+    <string name="notification_fallback_body">Open the app to review your alerts</string>
+
+    <!-- ── Demo Screen ───────────────────────────────────────────────── -->
+    <string name="demo_alert_summary">%d Critical · %d Warning</string>
+    <string name="demo_alerts_attention">Alerts require immediate attention</string>
+    <string name="demo_active_alerts">Active Alerts (%d)</string>
+    <string name="demo_grafana_metrics">Grafana Metrics</string>
+    <string name="demo_severity_critical">CRITICAL</string>
+    <string name="demo_severity_warning">WARNING</string>
+
+    <!-- ── Severity Labels ───────────────────────────────────────────── -->
+    <string name="severity_alert">Alert</string>
 </resources>

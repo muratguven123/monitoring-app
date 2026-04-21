@@ -21,9 +21,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.monitoring.dashboard.R
 import com.monitoring.dashboard.ui.components.EmptyState
 import com.monitoring.dashboard.ui.components.ErrorMessage
 import com.monitoring.dashboard.ui.components.LoadingIndicator
@@ -48,7 +50,7 @@ fun NewRelicAppsScreen(
             .padding(top = 16.dp),
     ) {
         Text(
-            text = "New Relic Applications",
+            text = stringResource(R.string.screen_newrelic_apps_title),
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(horizontal = 16.dp),
         )
@@ -58,7 +60,7 @@ fun NewRelicAppsScreen(
         OutlinedTextField(
             value = uiState.searchQuery,
             onValueChange = viewModel::onSearchQueryChanged,
-            placeholder = { Text("Search applications...") },
+            placeholder = { Text(stringResource(R.string.newrelic_search_placeholder)) },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             shape = RoundedCornerShape(12.dp),
             singleLine = true,
@@ -75,7 +77,7 @@ fun NewRelicAppsScreen(
                 message = uiState.errorMessage!!,
                 onRetry = viewModel::loadApplications,
             )
-            uiState.applications.isEmpty() -> EmptyState("No applications found")
+            uiState.applications.isEmpty() -> EmptyState(stringResource(R.string.newrelic_empty))
             else -> {
                 LazyColumn(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -105,13 +107,14 @@ fun NewRelicAppsScreen(
                                         append(" | ${String.format("%.2f", it)}% err")
                                     }
                                 }
-                            }.ifEmpty { "No data reported" },
+                            }.ifEmpty { stringResource(R.string.status_no_data_reported) },
                             icon = Icons.Default.Insights,
                             iconTint = NewRelicGreen,
                             trailingContent = {
                                 StatusIndicator(
                                     color = healthColor,
-                                    label = app.healthStatus?.replaceFirstChar { it.uppercase() } ?: "N/A",
+                                    label = app.healthStatus?.replaceFirstChar { it.uppercase() }
+                                        ?: stringResource(R.string.status_na),
                                 )
                             },
                             onClick = { onAppClick(app.id) },

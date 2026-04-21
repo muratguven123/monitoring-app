@@ -115,3 +115,49 @@ fun MetricItem(
         )
     }
 }
+
+/**
+ * Like [MetricItem] but with an explicit status [color] for the value text.
+ * Used to visually indicate healthy/warning/critical thresholds.
+ */
+@Composable
+fun ColoredMetricItem(
+    label: String,
+    value: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.headlineSmall,
+            color = color,
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/**
+ * Returns a status color based on a metric value and thresholds.
+ * - Below [greenBelow] → green (healthy)
+ * - Below [yellowBelow] → yellow/orange (warning)
+ * - At or above [yellowBelow] → red (critical)
+ */
+@Composable
+fun metricStatusColor(
+    value: Float,
+    greenBelow: Float,
+    yellowBelow: Float,
+): Color = when {
+    value < greenBelow -> com.monitoring.dashboard.ui.theme.StatusHealthy
+    value < yellowBelow -> com.monitoring.dashboard.ui.theme.StatusWarning
+    else -> com.monitoring.dashboard.ui.theme.StatusCritical
+}

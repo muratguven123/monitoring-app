@@ -16,7 +16,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -28,15 +27,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.monitoring.dashboard.R
+import com.monitoring.dashboard.ui.components.ColoredMetricItem
 import com.monitoring.dashboard.ui.components.ErrorMessage
 import com.monitoring.dashboard.ui.components.LoadingIndicator
 import com.monitoring.dashboard.ui.components.MetricItem
 import com.monitoring.dashboard.ui.components.ServiceHealth
 import com.monitoring.dashboard.ui.components.ServiceStatusCard
+import com.monitoring.dashboard.ui.components.metricStatusColor
 import com.monitoring.dashboard.ui.theme.StatusCritical
+import com.monitoring.dashboard.ui.theme.StatusHealthy
 import com.monitoring.dashboard.ui.theme.StatusWarning
 
 @Composable
@@ -55,10 +60,10 @@ fun NewRelicAppDetailScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBackClick) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.action_back))
             }
             Text(
-                text = uiState.application?.name ?: "Application",
+                text = uiState.application?.name ?: stringResource(R.string.screen_newrelic_app_detail_title),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.weight(1f),
             )
@@ -81,7 +86,7 @@ fun NewRelicAppDetailScreen(
                     item {
                         ServiceStatusCard(
                             serviceName = app.name,
-                            serviceType = app.language ?: "Application",
+                            serviceType = app.language ?: stringResource(R.string.screen_newrelic_app_detail_title),
                             health = when (app.healthStatus) {
                                 "green" -> ServiceHealth.HEALTHY
                                 "orange" -> ServiceHealth.WARNING
@@ -89,20 +94,21 @@ fun NewRelicAppDetailScreen(
                                 else -> ServiceHealth.UNKNOWN
                             },
                             statusText = when (app.healthStatus) {
-                                "green" -> "Healthy"
-                                "orange" -> "Warning"
-                                "red" -> "Critical"
-                                else -> "Not Reporting"
+                                "green" -> stringResource(R.string.status_healthy)
+                                "orange" -> stringResource(R.string.status_warning)
+                                "red" -> stringResource(R.string.status_critical)
+                                else -> stringResource(R.string.status_not_reporting)
                             },
-                            details = if (app.reporting) "Reporting" else "Not Reporting",
+                            details = if (app.reporting) stringResource(R.string.status_reporting)
+                                      else stringResource(R.string.status_not_reporting),
                         )
                     }
 
-                    // Application Summary Metrics
+                    // Application Summary Metrics — color coded
                     app.applicationSummary?.let { summary ->
                         item {
                             Text(
-                                text = "Performance Summary",
+                                text = stringResource(R.string.newrelic_performance_summary),
                                 style = MaterialTheme.typography.titleMedium,
                                 modifier = Modifier.padding(top = 8.dp),
                             )
@@ -120,21 +126,31 @@ fun NewRelicAppDetailScreen(
                                         horizontalArrangement = Arrangement.SpaceEvenly,
                                     ) {
                                         summary.responseTime?.let {
-                                            MetricItem(
-                                                label = "Response Time",
+                                            ColoredMetricItem(
+                                                label = stringResource(R.string.metric_response_time),
                                                 value = "${String.format("%.0f", it)}ms",
+                                                color = metricStatusColor(
+                                                    value = it.toFloat(),
+                                                    greenBelow = 500f,
+                                                    yellowBelow = 2000f,
+                                                ),
                                             )
                                         }
                                         summary.throughput?.let {
                                             MetricItem(
-                                                label = "Throughput",
+                                                label = stringResource(R.string.metric_throughput),
                                                 value = "${String.format("%.1f", it)} rpm",
                                             )
                                         }
                                         summary.errorRate?.let {
-                                            MetricItem(
-                                                label = "Error Rate",
+                                            ColoredMetricItem(
+                                                label = stringResource(R.string.metric_error_rate),
                                                 value = "${String.format("%.2f", it)}%",
+                                                color = metricStatusColor(
+                                                    value = it.toFloat(),
+                                                    greenBelow = 1f,
+                                                    yellowBelow = 5f,
+                                                ),
                                             )
                                         }
                                     }
@@ -144,20 +160,21 @@ fun NewRelicAppDetailScreen(
                                         horizontalArrangement = Arrangement.SpaceEvenly,
                                     ) {
                                         summary.apdexScore?.let {
-                                            MetricItem(
-                                                label = "Apdex Score",
+                                            ColoredMetricItem(
+                                                label = stringResource(R.string.metric_apdex_score),
                                                 value = String.format("%.2f", it),
+                                                color = apdexColor(it.toFloat()),
                                             )
                                         }
                                         summary.hostCount?.let {
                                             MetricItem(
-                                                label = "Hosts",
+                                                label = stringResource(R.string.metric_hosts),
                                                 value = it.toString(),
                                             )
                                         }
                                         summary.instanceCount?.let {
                                             MetricItem(
-                                                label = "Instances",
+                                                label = stringResource(R.string.metric_instances),
                                                 value = it.toString(),
                                             )
                                         }
@@ -171,7 +188,7 @@ fun NewRelicAppDetailScreen(
                     app.endUserSummary?.let { endUser ->
                         item {
                             Text(
-                                text = "End User Summary",
+                                text = stringResource(R.string.newrelic_end_user_summary),
                                 style = MaterialTheme.typography.titleMedium,
                                 modifier = Modifier.padding(top = 8.dp),
                             )
@@ -190,21 +207,27 @@ fun NewRelicAppDetailScreen(
                                     horizontalArrangement = Arrangement.SpaceEvenly,
                                 ) {
                                     endUser.responseTime?.let {
-                                        MetricItem(
-                                            label = "Page Load",
+                                        ColoredMetricItem(
+                                            label = stringResource(R.string.metric_page_load),
                                             value = "${String.format("%.0f", it)}ms",
+                                            color = metricStatusColor(
+                                                value = it.toFloat(),
+                                                greenBelow = 3000f,
+                                                yellowBelow = 7000f,
+                                            ),
                                         )
                                     }
                                     endUser.throughput?.let {
                                         MetricItem(
-                                            label = "Throughput",
+                                            label = stringResource(R.string.metric_throughput),
                                             value = "${String.format("%.1f", it)} ppm",
                                         )
                                     }
                                     endUser.apdexScore?.let {
-                                        MetricItem(
-                                            label = "Apdex",
+                                        ColoredMetricItem(
+                                            label = stringResource(R.string.metric_apdex),
                                             value = String.format("%.2f", it),
+                                            color = apdexColor(it.toFloat()),
                                         )
                                     }
                                 }
@@ -216,7 +239,7 @@ fun NewRelicAppDetailScreen(
                     if (uiState.violations.isNotEmpty()) {
                         item {
                             Text(
-                                text = "Open Violations (${uiState.violations.size})",
+                                text = stringResource(R.string.newrelic_open_violations, uiState.violations.size),
                                 style = MaterialTheme.typography.titleMedium,
                                 modifier = Modifier.padding(top = 8.dp),
                             )
@@ -244,7 +267,8 @@ fun NewRelicAppDetailScreen(
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = violation.conditionName ?: "Alert",
+                                            text = violation.conditionName
+                                                ?: stringResource(R.string.severity_alert),
                                             style = MaterialTheme.typography.titleSmall,
                                         )
                                         violation.policyName?.let {
@@ -265,4 +289,14 @@ fun NewRelicAppDetailScreen(
             }
         }
     }
+}
+
+/**
+ * Apdex color: green >= 0.9, yellow 0.7-0.9, red < 0.7
+ */
+@Composable
+private fun apdexColor(score: Float): Color = when {
+    score >= 0.9f -> StatusHealthy
+    score >= 0.7f -> StatusWarning
+    else -> StatusCritical
 }
