@@ -29,10 +29,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.monitoring.dashboard.data.remote.dto.PanelDto
+import com.monitoring.dashboard.R
 import com.monitoring.dashboard.ui.components.ErrorMessage
 import com.monitoring.dashboard.ui.components.LoadingIndicator
 
@@ -52,10 +54,10 @@ fun GrafanaDashboardDetailScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBackClick) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.action_back))
             }
             Text(
-                text = uiState.dashboard?.dashboard?.title ?: "Dashboard",
+                text = uiState.dashboard?.dashboard?.title ?: stringResource(R.string.screen_grafana_detail_title),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.weight(1f),
             )
@@ -93,7 +95,7 @@ fun GrafanaDashboardDetailScreen(
                             Row {
                                 meta.folderTitle?.let {
                                     Text(
-                                        text = "Folder: $it",
+                                        text = stringResource(R.string.grafana_folder_label, it),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
@@ -101,7 +103,7 @@ fun GrafanaDashboardDetailScreen(
                                 }
                                 meta.updated?.let {
                                     Text(
-                                        text = "Updated: $it",
+                                        text = stringResource(R.string.grafana_updated_label, it),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
@@ -113,7 +115,7 @@ fun GrafanaDashboardDetailScreen(
                     // Panels section header
                     item {
                         Text(
-                            text = "Panels (${dashboard.panels.size})",
+                            text = stringResource(R.string.grafana_panels_count, dashboard.panels.size),
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.padding(top = 8.dp),
                         )

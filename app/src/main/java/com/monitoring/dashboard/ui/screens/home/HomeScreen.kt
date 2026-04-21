@@ -30,9 +30,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.monitoring.dashboard.R
 import com.monitoring.dashboard.ui.components.LoadingIndicator
 import com.monitoring.dashboard.ui.components.MonitoringCard
 import com.monitoring.dashboard.ui.components.ServiceHealth
@@ -72,19 +74,18 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Monitoring Dashboard",
+                    text = stringResource(R.string.screen_home_title),
                     style = MaterialTheme.typography.headlineMedium,
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Countdown badge – shows seconds until next auto-refresh
                     Text(
-                        text = "${uiState.secondsUntilRefresh}s",
+                        text = stringResource(R.string.home_refresh_countdown, uiState.secondsUntilRefresh),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     IconButton(onClick = { viewModel.refresh() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.action_refresh))
                     }
                 }
             }
@@ -106,7 +107,7 @@ fun HomeScreen(
                     modifier = Modifier.padding(end = 8.dp),
                 )
                 Text(
-                    text = "Demo Preview — Team Leader Sunumu",
+                    text = stringResource(R.string.home_demo_banner),
                     style = MaterialTheme.typography.labelLarge,
                 )
             }
@@ -116,7 +117,7 @@ fun HomeScreen(
         if (uiState.openViolations.isNotEmpty()) {
             item {
                 MonitoringCard(
-                    title = "${uiState.openViolations.size} Open Alert Violations",
+                    title = stringResource(R.string.home_open_violations, uiState.openViolations.size),
                     subtitle = uiState.openViolations.firstOrNull()?.let {
                         "${it.policyName ?: ""} - ${it.conditionName ?: ""}"
                     },
@@ -130,7 +131,7 @@ fun HomeScreen(
         // ── Service Status ──────────────────────────────────────────
         item {
             Text(
-                text = "Service Status",
+                text = stringResource(R.string.home_service_status),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(top = 8.dp),
             )
@@ -142,8 +143,8 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 ServiceStatusCard(
-                    serviceName = "Grafana",
-                    serviceType = "Dashboards & Metrics",
+                    serviceName = stringResource(R.string.nav_grafana),
+                    serviceType = stringResource(R.string.service_type_dashboards_metrics),
                     health = if (uiState.grafanaHealth != null) {
                         if (uiState.grafanaHealth?.database == "ok") ServiceHealth.HEALTHY
                         else ServiceHealth.WARNING
@@ -153,9 +154,9 @@ fun HomeScreen(
                         ServiceHealth.UNKNOWN
                     },
                     statusText = when {
-                        uiState.grafanaHealth?.database == "ok" -> "Connected"
-                        uiState.grafanaHealthError != null -> "Disconnected"
-                        else -> "Unknown"
+                        uiState.grafanaHealth?.database == "ok" -> stringResource(R.string.status_connected)
+                        uiState.grafanaHealthError != null -> stringResource(R.string.status_disconnected)
+                        else -> stringResource(R.string.status_unknown)
                     },
                     details = uiState.grafanaHealth?.version?.let { "v$it" },
                     onClick = onNavigateToGrafana,
@@ -163,8 +164,8 @@ fun HomeScreen(
                 )
 
                 ServiceStatusCard(
-                    serviceName = "New Relic",
-                    serviceType = "APM & Alerts",
+                    serviceName = stringResource(R.string.nav_newrelic),
+                    serviceType = stringResource(R.string.service_type_apm_alerts),
                     health = when {
                         uiState.newRelicApps.isNotEmpty() -> {
                             val hasRed = uiState.newRelicApps.any { it.healthStatus == "red" }
@@ -179,9 +180,9 @@ fun HomeScreen(
                         else -> ServiceHealth.UNKNOWN
                     },
                     statusText = when {
-                        uiState.newRelicApps.isNotEmpty() -> "${uiState.newRelicApps.size} Apps"
-                        uiState.newRelicAppsError != null -> "Disconnected"
-                        else -> "No API Key"
+                        uiState.newRelicApps.isNotEmpty() -> stringResource(R.string.home_apps_count, uiState.newRelicApps.size)
+                        uiState.newRelicAppsError != null -> stringResource(R.string.status_disconnected)
+                        else -> stringResource(R.string.status_no_api_key)
                     },
                     onClick = onNavigateToNewRelic,
                     modifier = Modifier.weight(1f),
@@ -193,14 +194,14 @@ fun HomeScreen(
         if (uiState.grafanaDashboards.isNotEmpty()) {
             item {
                 SectionHeader(
-                    title = "Grafana Dashboards",
+                    title = stringResource(R.string.home_grafana_dashboards),
                     onSeeAll = onNavigateToGrafana,
                 )
             }
             items(uiState.grafanaDashboards) { dashboard ->
                 MonitoringCard(
                     title = dashboard.title,
-                    subtitle = dashboard.folderTitle ?: "General",
+                    subtitle = dashboard.folderTitle ?: stringResource(R.string.grafana_folder_default),
                     icon = Icons.Default.MonitorHeart,
                     iconTint = GrafanaOrange,
                     onClick = { onNavigateToGrafanaDashboard(dashboard.uid) },
@@ -212,7 +213,7 @@ fun HomeScreen(
         if (uiState.newRelicApps.isNotEmpty()) {
             item {
                 SectionHeader(
-                    title = "New Relic Applications",
+                    title = stringResource(R.string.home_newrelic_apps),
                     onSeeAll = onNavigateToNewRelic,
                 )
             }
@@ -228,7 +229,7 @@ fun HomeScreen(
                         app.applicationSummary?.errorRate?.let {
                             append(" | ${it}% errors")
                         }
-                    }.ifEmpty { "No data" },
+                    }.ifEmpty { stringResource(R.string.status_no_data) },
                     icon = Icons.Default.Insights,
                     iconTint = NewRelicGreen,
                     trailingContent = {
@@ -240,7 +241,7 @@ fun HomeScreen(
                         }
                         com.monitoring.dashboard.ui.components.StatusIndicator(
                             color = color,
-                            label = app.healthStatus?.replaceFirstChar { it.uppercase() } ?: "N/A",
+                            label = app.healthStatus?.replaceFirstChar { it.uppercase() } ?: stringResource(R.string.status_na),
                         )
                     },
                     onClick = { onNavigateToNewRelicApp(app.id) },
@@ -269,7 +270,7 @@ private fun SectionHeader(
             style = MaterialTheme.typography.titleMedium,
         )
         TextButton(onClick = onSeeAll) {
-            Text("See All")
+            Text(stringResource(R.string.action_see_all))
         }
     }
 }

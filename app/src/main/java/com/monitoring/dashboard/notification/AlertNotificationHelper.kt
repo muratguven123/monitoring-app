@@ -10,6 +10,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.monitoring.dashboard.MainActivity
+import com.monitoring.dashboard.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
 import javax.inject.Inject
@@ -34,20 +35,20 @@ class AlertNotificationHelper @Inject constructor(
 
         val criticalChannel = NotificationChannel(
             CHANNEL_CRITICAL,
-            "Critical Alert Violations",
+            context.getString(R.string.notification_channel_critical),
             NotificationManager.IMPORTANCE_HIGH,
         ).apply {
-            description = "Notifications for critical-priority New Relic alert violations"
+            description = context.getString(R.string.notification_channel_critical_desc)
             enableVibration(true)
             enableLights(true)
         }
 
         val warningChannel = NotificationChannel(
             CHANNEL_WARNING,
-            "Warning Alert Violations",
+            context.getString(R.string.notification_channel_warning),
             NotificationManager.IMPORTANCE_DEFAULT,
         ).apply {
-            description = "Notifications for warning-priority New Relic alert violations"
+            description = context.getString(R.string.notification_channel_warning_desc)
         }
 
         manager.createNotificationChannel(criticalChannel)
@@ -87,11 +88,11 @@ class AlertNotificationHelper @Inject constructor(
         )
 
         val title = if (newViolationCount == 1) {
-            "⚠ New Alert Violation"
+            context.getString(R.string.notification_single_violation)
         } else {
-            "⚠ $newViolationCount New Alert Violations"
+            context.getString(R.string.notification_multiple_violations, newViolationCount)
         }
-        val body = policyName ?: "Open the app to review your alerts"
+        val body = policyName ?: context.getString(R.string.notification_fallback_body)
 
         val notification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
