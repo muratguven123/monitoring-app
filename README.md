@@ -91,6 +91,10 @@ API key bilgileri cihazda `EncryptedSharedPreferences` ile güvenli şekilde sak
 ./gradlew clean
 ```
 
+## Offline Support
+
+Uygulama, Room veritabanı ile tam offline destek sunar. Grafana dashboard listesi, New Relic uygulama bilgileri ve alert violation verileri her başarılı API çağrısından sonra yerel veritabanına önbelleğe alınır (cache TTL: 5 dakika). İnternet bağlantısı kesildiğinde veya API çağrısı başarısız olduğunda, uygulama otomatik olarak son önbellekteki verileri gösterir; bu sayede uçak modunda bile son durumu takip edebilirsiniz. `AlertMonitorWorker` arka plan görevinde de ihlal karşılaştırması artık Room üzerinden yapılır, böylece tekrarlı bildirimler engellenir ve geçmiş ihlaller kalıcı olarak saklanır.
+
 ## Mimari (Özet)
 
 ```

@@ -145,9 +145,15 @@ dependencies {
 
     // Unit Testing
     testImplementation(libs.bundles.testing)
+    testImplementation(libs.arch.core.testing)
+    testImplementation(libs.work.testing)
 
     // Instrumented Testing
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.bundles.android.testing)
+    androidTestImplementation(libs.room.testing)
+    androidTestImplementation(libs.arch.core.testing)
+    androidTestImplementation(libs.runner)
+    androidTestImplementation(libs.coroutines.test)
     kaptAndroidTest(libs.hilt.compiler)
 }
