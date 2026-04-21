@@ -7,6 +7,9 @@ import com.monitoring.dashboard.data.remote.NewRelicApiService
 import com.monitoring.dashboard.data.remote.interceptor.AuthInterceptor
 import com.monitoring.dashboard.data.remote.interceptor.DynamicBaseUrlInterceptor
 import com.monitoring.dashboard.data.remote.interceptor.NewRelicAuthInterceptor
+import com.monitoring.dashboard.data.local.dao.AlertDao
+import com.monitoring.dashboard.data.local.dao.GrafanaDao
+import com.monitoring.dashboard.data.local.dao.NewRelicDao
 import com.monitoring.dashboard.data.repository.GrafanaRepository
 import com.monitoring.dashboard.data.repository.GrafanaRepositoryImpl
 import com.monitoring.dashboard.data.repository.NewRelicRepository
@@ -23,6 +26,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+import javax.inject.Named
 import javax.inject.Qualifier
 import javax.inject.Singleton
 
@@ -117,9 +121,11 @@ object NetworkModule {
     @Singleton
     fun provideGrafanaRepository(
         apiService: GrafanaApiService,
+        grafanaDao: GrafanaDao,
         @IoDispatcher ioDispatcher: CoroutineDispatcher,
+        @Named("cacheTtlMs") cacheTtlMs: Long,
     ): GrafanaRepository =
-        GrafanaRepositoryImpl(apiService, ioDispatcher)
+        GrafanaRepositoryImpl(apiService, grafanaDao, ioDispatcher, cacheTtlMs)
 
     // ══════════════════════════════════════════════════════════════════════
     // ██  NEW RELIC  ██████████████████████████████████████████████████████
@@ -163,9 +169,12 @@ object NetworkModule {
     @Singleton
     fun provideNewRelicRepository(
         apiService: NewRelicApiService,
+        newRelicDao: NewRelicDao,
+        alertDao: AlertDao,
         @IoDispatcher ioDispatcher: CoroutineDispatcher,
+        @Named("cacheTtlMs") cacheTtlMs: Long,
     ): NewRelicRepository =
-        NewRelicRepositoryImpl(apiService, ioDispatcher)
+        NewRelicRepositoryImpl(apiService, newRelicDao, alertDao, ioDispatcher, cacheTtlMs)
 
     // ── Helpers ───────────────────────────────────────────────────────────
 

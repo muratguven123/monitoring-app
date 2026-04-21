@@ -9,7 +9,8 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import com.monitoring.dashboard.data.local.SecurePreferencesManager
+import com.monitoring.dashboard.data.local.dao.AlertDao
+import com.monitoring.dashboard.data.local.entity.AlertViolationEntity
 import com.monitoring.dashboard.data.remote.util.NetworkResult
 import com.monitoring.dashboard.data.repository.NewRelicRepository
 import com.monitoring.dashboard.notification.AlertNotificationHelper
@@ -22,8 +23,10 @@ import java.util.concurrent.TimeUnit
  * Background worker that periodically checks New Relic for open alert violations
  * and fires a push notification when new ones are detected since the last run.
  *
- * Scheduled via [schedule] as a unique periodic task so it survives app restarts.
+ * Violation deduplication is backed by Room DB ([AlertDao]) instead of in-memory
+ * or SharedPreferences storage.
  *
+ * Scheduled via [schedule] as a unique periodic task so it survives app restarts.
  * Requires network connectivity (CONNECTED constraint) before executing.
  */
 @HiltWorker
@@ -32,7 +35,7 @@ class AlertMonitorWorker @AssistedInject constructor(
     @Assisted workerParams: WorkerParameters,
     private val newRelicRepository: NewRelicRepository,
     private val notificationHelper: AlertNotificationHelper,
-    private val securePrefsManager: SecurePreferencesManager,
+    private val alertDao: AlertDao,
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
@@ -41,8 +44,10 @@ class AlertMonitorWorker @AssistedInject constructor(
             when (val result = newRelicRepository.getAlertViolations(onlyOpen = true)) {
                 is NetworkResult.Success -> {
                     val violations = result.data
-                    val currentIds  = violations.map { it.id }.toSet()
-                    val previousIds = securePrefsManager.getLastKnownViolationIds()
+                    val currentIds = violations.map { it.id }.toSet()
+
+                    // Read previously cached violation IDs from Room
+                    val previousIds = alertDao.getAll().map { it.id }.toSet()
 
                     // Detect violations that weren't in the last snapshot
                     val newViolations = violations.filter { it.id !in previousIds }
@@ -52,15 +57,26 @@ class AlertMonitorWorker @AssistedInject constructor(
                         val isCritical = newViolations.any { it.priority?.lowercase() == "critical" }
                         notificationHelper.showAlertNotification(
                             newViolationCount = newViolations.size,
-                            policyName        = newViolations.firstOrNull()?.policyName,
-                            isCritical        = isCritical,
+                            policyName = newViolations.firstOrNull()?.policyName,
+                            isCritical = isCritical,
                         )
                     } else {
                         Timber.d("AlertMonitorWorker: no new violations")
                     }
 
-                    // Persist current snapshot for next run comparison
-                    securePrefsManager.saveLastKnownViolationIds(currentIds)
+                    // Persist current snapshot to Room for next run comparison
+                    alertDao.deleteAll()
+                    alertDao.insertAll(
+                        violations.map { v ->
+                            AlertViolationEntity(
+                                id = v.id,
+                                label = v.label,
+                                policyName = v.policyName,
+                                openedAt = v.openedAt,
+                                severity = v.priority,
+                            )
+                        },
+                    )
                     Result.success()
                 }
                 is NetworkResult.Error -> {
@@ -96,13 +112,11 @@ class AlertMonitorWorker @AssistedInject constructor(
                 TimeUnit.MINUTES,
             )
                 .setConstraints(constraints)
-                // Flex period: worker may run up to 5 min before the deadline
-                // .setInitialDelay(1, TimeUnit.MINUTES) // optional: skip first immediate run
                 .build()
 
             workManager.enqueueUniquePeriodicWork(
                 WORK_NAME,
-                ExistingPeriodicWorkPolicy.KEEP, // don't reset timer if already scheduled
+                ExistingPeriodicWorkPolicy.KEEP,
                 request,
             )
 

@@ -1,5 +1,7 @@
 package com.monitoring.dashboard.data.repository
 
+import com.monitoring.dashboard.data.local.dao.GrafanaDao
+import com.monitoring.dashboard.data.local.entity.GrafanaDashboardEntity
 import com.monitoring.dashboard.data.remote.GrafanaApiService
 import com.monitoring.dashboard.data.remote.dto.DashboardDetailResponseDto
 import com.monitoring.dashboard.data.remote.dto.DashboardSearchHitDto
@@ -11,19 +13,27 @@ import kotlinx.coroutines.withContext
 import retrofit2.Response
 import timber.log.Timber
 import javax.inject.Inject
+import javax.inject.Named
 import javax.inject.Singleton
 
 /**
  * Concrete implementation of [GrafanaRepository].
- * Delegates to [GrafanaApiService] and maps Retrofit [Response] objects to [NetworkResult].
+ *
+ * Uses a **NetworkBoundResource** strategy for dashboard searches:
+ * 1. Emit cached data from Room immediately.
+ * 2. Fire network request in parallel.
+ * 3. On success → update DB, return fresh data.
+ * 4. On failure → return cached data with an error log.
  */
 @Singleton
 class GrafanaRepositoryImpl @Inject constructor(
     private val apiService: GrafanaApiService,
+    private val grafanaDao: GrafanaDao,
     private val ioDispatcher: CoroutineDispatcher,
+    @Named("cacheTtlMs") private val cacheTtlMs: Long,
 ) : GrafanaRepository {
 
-    // ── Dashboards ────────────────────────────────────────────────────────
+    // ── Dashboards (NetworkBoundResource) ─────────────────────────────────
 
     override suspend fun searchDashboards(
         query: String?,
@@ -32,15 +42,42 @@ class GrafanaRepositoryImpl @Inject constructor(
         starred: Boolean?,
         limit: Int?,
         page: Int?,
-    ): NetworkResult<List<DashboardSearchHitDto>> = safeApiCall {
-        apiService.searchDashboards(
-            query = query,
-            type = type,
-            tag = tag,
-            starred = starred,
-            limit = limit,
-            page = page,
-        )
+    ): NetworkResult<List<DashboardSearchHitDto>> = withContext(ioDispatcher) {
+        // Evict stale cache entries
+        grafanaDao.deleteOlderThan(System.currentTimeMillis() - cacheTtlMs)
+
+        // Try network first
+        val networkResult = safeApiCall {
+            apiService.searchDashboards(
+                query = query,
+                type = type,
+                tag = tag,
+                starred = starred,
+                limit = limit,
+                page = page,
+            )
+        }
+
+        when (networkResult) {
+            is NetworkResult.Success -> {
+                // Update cache
+                val entities = networkResult.data.map { it.toEntity() }
+                grafanaDao.deleteAll()
+                grafanaDao.insertAll(entities)
+                networkResult
+            }
+            is NetworkResult.Error -> {
+                // Serve from cache
+                val cached = grafanaDao.getAll()
+                if (cached.isNotEmpty()) {
+                    Timber.w("Grafana network error, serving ${cached.size} cached dashboards")
+                    NetworkResult.Success(cached.map { it.toDto() })
+                } else {
+                    networkResult
+                }
+            }
+            is NetworkResult.Loading -> networkResult
+        }
     }
 
     override suspend fun getDashboardByUid(
@@ -73,12 +110,32 @@ class GrafanaRepositoryImpl @Inject constructor(
         apiService.getHealth()
     }
 
+    // ── Mapping helpers ──────────────────────────────────────────────────
+
+    private fun DashboardSearchHitDto.toEntity() = GrafanaDashboardEntity(
+        id = id,
+        uid = uid,
+        title = title,
+        tags = tags.joinToString(","),
+        url = url,
+        folderTitle = folderTitle,
+    )
+
+    private fun GrafanaDashboardEntity.toDto() = DashboardSearchHitDto(
+        id = id,
+        uid = uid,
+        title = title,
+        uri = "",
+        url = url,
+        slug = "",
+        type = "dash-db",
+        tags = if (tags.isBlank()) emptyList() else tags.split(","),
+        isStarred = false,
+        folderTitle = folderTitle,
+    )
+
     // ── Internal helper ───────────────────────────────────────────────────
 
-    /**
-     * Wraps a Retrofit suspend call in a try/catch and maps the result
-     * to [NetworkResult.Success] or [NetworkResult.Error].
-     */
     private suspend fun <T> safeApiCall(
         apiCall: suspend () -> Response<T>,
     ): NetworkResult<T> = withContext(ioDispatcher) {
