@@ -12,15 +12,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.MonitorHeart
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -41,7 +37,6 @@ import com.monitoring.dashboard.ui.components.ServiceHealth
 import com.monitoring.dashboard.ui.components.ServiceStatusCard
 import com.monitoring.dashboard.ui.theme.GrafanaOrange
 import com.monitoring.dashboard.ui.theme.NewRelicGreen
-import com.monitoring.dashboard.ui.theme.OrangeGrafana
 import com.monitoring.dashboard.ui.theme.StatusCritical
 import com.monitoring.dashboard.ui.theme.StatusWarning
 
@@ -51,7 +46,6 @@ fun HomeScreen(
     onNavigateToNewRelic: () -> Unit,
     onNavigateToGrafanaDashboard: (String) -> Unit,
     onNavigateToNewRelicApp: (Long) -> Unit,
-    onNavigateToDemo: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -88,28 +82,6 @@ fun HomeScreen(
                         Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.action_refresh))
                     }
                 }
-            }
-        }
-
-        // ── Demo Preview Banner ──────────────────────────────────────
-        item {
-            Button(
-                onClick = onNavigateToDemo,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = OrangeGrafana,
-                ),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = null,
-                    modifier = Modifier.padding(end = 8.dp),
-                )
-                Text(
-                    text = stringResource(R.string.home_demo_banner),
-                    style = MaterialTheme.typography.labelLarge,
-                )
             }
         }
 

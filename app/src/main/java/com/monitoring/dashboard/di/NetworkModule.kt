@@ -63,8 +63,11 @@ object NetworkModule {
     fun provideLoggingInterceptor(): HttpLoggingInterceptor =
         HttpLoggingInterceptor().apply {
             level = if (BuildConfig.DEBUG) {
+                // Debug: log full request/response bodies for easier debugging.
+                // WARNING: this will log Authorization and Api-Key headers — never enable in release.
                 HttpLoggingInterceptor.Level.BODY
             } else {
+                // Release: no HTTP logging to prevent leaking credentials or PII.
                 HttpLoggingInterceptor.Level.NONE
             }
         }
@@ -97,11 +100,16 @@ object NetworkModule {
         @GrafanaClient okHttpClient: OkHttpClient,
         securePreferencesManager: SecurePreferencesManager,
     ): Retrofit {
+        // Priority: runtime user setting > BuildConfig default > debug fallback (debug only)
         val baseUrl = securePreferencesManager
             .getGrafanaBaseUrl()
             ?.toRetrofitBaseUrlOrNull()
-            ?: BuildConfig.GRAFANA_BASE_URL.toRetrofitBaseUrlOrNull()
-            ?: "http://10.0.2.2:3000/"
+            ?: BuildConfig.GRAFANA_BASE_URL
+                .takeIf { it.isNotBlank() }
+                ?.toRetrofitBaseUrlOrNull()
+            ?: if (BuildConfig.DEBUG) "http://10.0.2.2:3000/" else "https://localhost/"
+        // In production the user MUST configure the Grafana URL via Settings.
+        // The "https://localhost/" placeholder will simply fail requests until configured.
 
         return Retrofit.Builder()
             .baseUrl(baseUrl)

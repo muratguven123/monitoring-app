@@ -22,12 +22,38 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+    }
 
+    signingConfigs {
+        // Release signing config – override via environment variables in CI:
+        //   KEYSTORE_PATH, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD
+        // Or create a local keystore.properties file (do NOT commit it to VCS).
+        create("release") {
+            val keystorePath = System.getenv("KEYSTORE_PATH")
+                ?: project.findProperty("keystorePath") as String?
+            val keystorePassword = System.getenv("KEYSTORE_PASSWORD")
+                ?: project.findProperty("keystorePassword") as String?
+            val keyAlias = System.getenv("KEY_ALIAS")
+                ?: project.findProperty("keyAlias") as String?
+            val keyPassword = System.getenv("KEY_PASSWORD")
+                ?: project.findProperty("keyPassword") as String?
+
+            if (keystorePath != null) {
+                storeFile = file(keystorePath)
+                storePassword = keystorePassword
+                this.keyAlias = keyAlias
+                this.keyPassword = keyPassword
+            }
+        }
     }
 
     buildTypes {
         debug {
             isMinifyEnabled = false
+            isDebuggable = true
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+            // Debug URLs point to local emulator (http://10.0.2.2 = host machine)
             buildConfigField("String", "GRAFANA_BASE_URL", "\"http://10.0.2.2:3000\"")
             buildConfigField("String", "NEWRELIC_BASE_URL", "\"http://10.0.2.2:5000\"")
             buildConfigField("String", "NEWRELIC_NERDGRAPH_URL", "\"http://10.0.2.2:5000/graphql\"")
@@ -36,11 +62,15 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            isDebuggable = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            buildConfigField("String", "GRAFANA_BASE_URL", "\"https://grafana.example.com\"")
+            // Production URLs — Grafana base URL is overridable at runtime via Settings.
+            // New Relic always uses the official API endpoint.
+            buildConfigField("String", "GRAFANA_BASE_URL", "\"\"")   // empty → user sets via Settings
             buildConfigField("String", "NEWRELIC_BASE_URL", "\"https://api.newrelic.com\"")
             buildConfigField("String", "NEWRELIC_NERDGRAPH_URL", "\"https://api.newrelic.com/graphql\"")
             buildConfigField("String", "GITHUB_BASE_URL", "\"https://api.github.com\"")

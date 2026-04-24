@@ -27,9 +27,6 @@ sealed class Screen(
         fun createRoute(appId: Long) = "newrelic/app/$appId"
     }
 
-    // Demo screen
-    data object Demo : Screen("demo", "Demo Preview")
-
     companion object {
         val bottomNavItems = listOf(Home, Grafana, NewRelic, Settings)
     }
