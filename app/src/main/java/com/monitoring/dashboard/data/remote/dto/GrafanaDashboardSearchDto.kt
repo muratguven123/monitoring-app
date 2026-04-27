@@ -8,31 +8,31 @@ import com.google.gson.annotations.SerializedName
  */
 data class DashboardSearchHitDto(
     @SerializedName("id")
-    val id: Long,
+    val id: Long = 0L,
 
     @SerializedName("uid")
-    val uid: String,
+    val uid: String = "",
 
     @SerializedName("title")
-    val title: String,
+    val title: String = "",
 
     @SerializedName("uri")
-    val uri: String,
+    val uri: String = "",
 
     @SerializedName("url")
-    val url: String,
+    val url: String = "",
 
     @SerializedName("slug")
-    val slug: String,
+    val slug: String = "",
 
     @SerializedName("type")
-    val type: String, // "dash-db" or "dash-folder"
+    val type: String = "", // "dash-db" or "dash-folder"
 
     @SerializedName("tags")
-    val tags: List<String>,
+    val tags: List<String> = emptyList(),
 
     @SerializedName("isStarred")
-    val isStarred: Boolean,
+    val isStarred: Boolean = false,
 
     @SerializedName("folderId")
     val folderId: Long? = null,

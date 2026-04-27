@@ -33,10 +33,10 @@ data class DashboardMetaDto(
     val canDelete: Boolean = false,
 
     @SerializedName("slug")
-    val slug: String,
+    val slug: String = "",
 
     @SerializedName("url")
-    val url: String,
+    val url: String = "",
 
     @SerializedName("expires")
     val expires: String? = null,
@@ -74,13 +74,13 @@ data class DashboardMetaDto(
 
 data class DashboardDto(
     @SerializedName("id")
-    val id: Long?,
+    val id: Long? = null,
 
     @SerializedName("uid")
-    val uid: String,
+    val uid: String = "",
 
     @SerializedName("title")
-    val title: String,
+    val title: String = "",
 
     @SerializedName("tags")
     val tags: List<String> = emptyList(),

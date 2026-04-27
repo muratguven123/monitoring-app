@@ -121,8 +121,8 @@ fun GrafanaDashboardDetailScreen(
                         )
                     }
 
-                    // Panels
-                    items(dashboard.panels.filter { it.type != "row" }) { panel ->
+                    // Panels (row tipi paneller ve id'si olmayan geçersiz paneller filtrelenir)
+                    items(dashboard.panels.filter { it.type != "row" && it.id != 0L }) { panel ->
                         PanelCard(panel = panel)
                     }
                 }
@@ -158,11 +158,11 @@ private fun PanelCard(panel: PanelDto) {
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = panel.title,
+                    text = panel.title.ifBlank { "Panel #${panel.id}" },
                     style = MaterialTheme.typography.titleSmall,
                 )
                 Text(
-                    text = panel.type.replaceFirstChar { it.uppercase() },
+                    text = panel.type.replaceFirstChar { it.uppercase() }.ifBlank { "Unknown" },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

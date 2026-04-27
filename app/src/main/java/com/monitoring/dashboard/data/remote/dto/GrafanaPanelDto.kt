@@ -8,13 +8,13 @@ import com.google.gson.annotations.SerializedName
  */
 data class PanelDto(
     @SerializedName("id")
-    val id: Long,
+    val id: Long = 0L,
 
     @SerializedName("title")
-    val title: String,
+    val title: String = "", // Grafana Cloud'da bazı panellerde title eksik gelebilir
 
     @SerializedName("type")
-    val type: String, // e.g. "graph", "stat", "gauge", "table", "timeseries", "row"
+    val type: String = "", // e.g. "graph", "stat", "gauge", "table", "timeseries", "row"
 
     @SerializedName("description")
     val description: String? = null,
