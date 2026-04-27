@@ -14,9 +14,12 @@ import com.monitoring.dashboard.data.repository.GrafanaRepository
 import com.monitoring.dashboard.data.repository.GrafanaRepositoryImpl
 import com.monitoring.dashboard.data.repository.NewRelicRepository
 import com.monitoring.dashboard.data.repository.NewRelicRepositoryImpl
+import android.content.Context
+import coil.ImageLoader
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -183,6 +186,23 @@ object NetworkModule {
         @Named("cacheTtlMs") cacheTtlMs: Long,
     ): NewRelicRepository =
         NewRelicRepositoryImpl(apiService, newRelicDao, alertDao, ioDispatcher, cacheTtlMs)
+
+    // ── Grafana Image Loader (Coil) ───────────────────────────────────────
+    //
+    // Grafana panel render endpoint returns PNG images that require the same
+    // Bearer token as the REST API. We wire Coil's ImageLoader to the same
+    // OkHttpClient so auth headers are injected automatically.
+
+    @Provides
+    @Singleton
+    fun provideGrafanaImageLoader(
+        @ApplicationContext context: Context,
+        @GrafanaClient okHttpClient: OkHttpClient,
+    ): ImageLoader =
+        ImageLoader.Builder(context)
+            .okHttpClient(okHttpClient)
+            .crossfade(true)
+            .build()
 
     // ── Helpers ───────────────────────────────────────────────────────────
 
