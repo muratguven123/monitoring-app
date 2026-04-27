@@ -1,6 +1,7 @@
 package com.monitoring.dashboard.ui.screens.grafana
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -55,6 +56,7 @@ import com.monitoring.dashboard.ui.components.LoadingIndicator
 @Composable
 fun GrafanaDashboardDetailScreen(
     onBackClick: () -> Unit,
+    onPanelClick: (uid: String, panelId: Long, slug: String, panelTitle: String) -> Unit = { _, _, _, _ -> },
     viewModel: GrafanaDashboardDetailViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -150,6 +152,9 @@ fun GrafanaDashboardDetailScreen(
                                 panelId = panel.id,
                             ),
                             imageLoader = imageLoader,
+                            onClick = {
+                                onPanelClick(uid, panel.id, slug, panel.title.ifBlank { "Panel #${panel.id}" })
+                            },
                         )
                     }
                 }

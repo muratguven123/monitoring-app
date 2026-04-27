@@ -23,6 +23,17 @@ sealed class Screen(
         fun createRoute(uid: String) = "grafana/dashboard/$uid"
     }
 
+    data object GrafanaPanelDetail : Screen(
+        route = "grafana/dashboard/{uid}/panel/{panelId}?slug={slug}&panelTitle={panelTitle}",
+        title = "Panel Detail",
+    ) {
+        fun createRoute(uid: String, panelId: Long, slug: String, panelTitle: String): String {
+            val encodedSlug  = java.net.URLEncoder.encode(slug, "UTF-8")
+            val encodedTitle = java.net.URLEncoder.encode(panelTitle, "UTF-8")
+            return "grafana/dashboard/$uid/panel/$panelId?slug=$encodedSlug&panelTitle=$encodedTitle"
+        }
+    }
+
     data object NewRelicAppDetail : Screen("newrelic/app/{appId}", "App Detail") {
         fun createRoute(appId: Long) = "newrelic/app/$appId"
     }

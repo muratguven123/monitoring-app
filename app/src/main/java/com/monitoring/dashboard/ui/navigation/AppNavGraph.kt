@@ -9,6 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.monitoring.dashboard.ui.screens.grafana.GrafanaDashboardDetailScreen
 import com.monitoring.dashboard.ui.screens.grafana.GrafanaDashboardsScreen
+import com.monitoring.dashboard.ui.screens.grafana.GrafanaPanelDetailScreen
 import com.monitoring.dashboard.ui.screens.home.HomeScreen
 import com.monitoring.dashboard.ui.screens.newrelic.NewRelicAppDetailScreen
 import com.monitoring.dashboard.ui.screens.newrelic.NewRelicAppsScreen
@@ -67,6 +68,26 @@ fun AppNavGraph(
             ),
         ) {
             GrafanaDashboardDetailScreen(
+                onBackClick = { navController.popBackStack() },
+                onPanelClick = { uid, panelId, slug, panelTitle ->
+                    navController.navigate(
+                        Screen.GrafanaPanelDetail.createRoute(uid, panelId, slug, panelTitle)
+                    )
+                },
+            )
+        }
+
+        // ── Grafana Panel Detail ───────────────────────────────────────────
+        composable(
+            route = Screen.GrafanaPanelDetail.route,
+            arguments = listOf(
+                navArgument("uid")        { type = NavType.StringType },
+                navArgument("panelId")    { type = NavType.LongType },
+                navArgument("slug")       { type = NavType.StringType; defaultValue = "" },
+                navArgument("panelTitle") { type = NavType.StringType; defaultValue = "" },
+            ),
+        ) {
+            GrafanaPanelDetailScreen(
                 onBackClick = { navController.popBackStack() },
             )
         }
