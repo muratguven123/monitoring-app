@@ -5,12 +5,18 @@ import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import dagger.hilt.android.qualifiers.ApplicationContext
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Manages sensitive configuration values (API keys, base URLs) using
  * [EncryptedSharedPreferences] backed by Android Keystore.
+ *
+ * Robust against Keystore corruption: if the encrypted file cannot be opened
+ * (e.g. after a PIN/biometric change, backup-restore, or partial write), the
+ * file is deleted and a fresh empty store is created so the app never gets
+ * stuck in a crash loop.  The user will simply have to re-enter their settings.
  */
 @Singleton
 class SecurePreferencesManager @Inject constructor(
@@ -18,11 +24,28 @@ class SecurePreferencesManager @Inject constructor(
 ) {
 
     private val prefs: SharedPreferences by lazy {
+        try {
+            createEncryptedPrefs()
+        } catch (firstException: Exception) {
+            // Keystore key gone / file corrupted → wipe and retry
+            Timber.w(firstException, "EncryptedSharedPreferences init failed – resetting prefs file")
+            context.deleteSharedPreferences(PREFS_FILE_NAME)
+            try {
+                createEncryptedPrefs()
+            } catch (secondException: Exception) {
+                // Absolute last resort: plain (unencrypted) prefs so the app can at least open
+                Timber.e(secondException, "EncryptedSharedPreferences failed twice – falling back to plain prefs")
+                context.getSharedPreferences("${PREFS_FILE_NAME}_fallback", Context.MODE_PRIVATE)
+            }
+        }
+    }
+
+    private fun createEncryptedPrefs(): SharedPreferences {
         val masterKey = MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build()
 
-        EncryptedSharedPreferences.create(
+        return EncryptedSharedPreferences.create(
             context,
             PREFS_FILE_NAME,
             masterKey,

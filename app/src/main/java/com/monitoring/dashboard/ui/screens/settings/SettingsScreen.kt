@@ -15,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -136,6 +137,18 @@ fun SettingsScreen(
                 shape = RoundedCornerShape(12.dp),
             ) {
                 Text(stringResource(R.string.action_clear_all))
+            }
+        }
+
+        // ── Save error feedback ─────────────────────────────────────
+        if (uiState.saveError) {
+            item {
+                Text(
+                    text = "Ayarlar kaydedilemedi. Lütfen tekrar deneyin.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFB00020),
+                    modifier = Modifier.padding(top = 4.dp),
+                )
             }
         }
 
