@@ -13,6 +13,7 @@ import com.monitoring.dashboard.ui.screens.grafana.GrafanaPanelDetailScreen
 import com.monitoring.dashboard.ui.screens.home.HomeScreen
 import com.monitoring.dashboard.ui.screens.newrelic.NewRelicAppDetailScreen
 import com.monitoring.dashboard.ui.screens.newrelic.NewRelicAppsScreen
+import com.monitoring.dashboard.ui.screens.newrelic.NewRelicMetricDetailScreen
 import com.monitoring.dashboard.ui.screens.settings.SettingsScreen
 
 /**
@@ -109,6 +110,27 @@ fun AppNavGraph(
             ),
         ) {
             NewRelicAppDetailScreen(
+                onBackClick   = { navController.popBackStack() },
+                onMetricClick = { appId, metricName, valueKey, displayName, unit ->
+                    navController.navigate(
+                        Screen.NewRelicMetricDetail.createRoute(appId, metricName, valueKey, displayName, unit)
+                    )
+                },
+            )
+        }
+
+        // ── New Relic Metric Detail ────────────────────────────────────────
+        composable(
+            route = Screen.NewRelicMetricDetail.route,
+            arguments = listOf(
+                navArgument("appId")       { type = NavType.LongType },
+                navArgument("metricName")  { type = NavType.StringType },
+                navArgument("valueKey")    { type = NavType.StringType; defaultValue = "" },
+                navArgument("displayName") { type = NavType.StringType; defaultValue = "" },
+                navArgument("unit")        { type = NavType.StringType; defaultValue = "" },
+            ),
+        ) {
+            NewRelicMetricDetailScreen(
                 onBackClick = { navController.popBackStack() },
             )
         }

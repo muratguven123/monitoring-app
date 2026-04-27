@@ -47,6 +47,7 @@ import com.monitoring.dashboard.ui.theme.StatusWarning
 @Composable
 fun NewRelicAppDetailScreen(
     onBackClick: () -> Unit,
+    onMetricClick: (appId: Long, metricName: String, valueKey: String, displayName: String, unit: String) -> Unit = { _, _, _, _, _ -> },
     viewModel: NewRelicAppDetailViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -282,6 +283,37 @@ fun NewRelicAppDetailScreen(
                                 }
                             }
                         }
+                    }
+
+                    // ── Metric Grafikleri ─────────────────────────────────
+                    item {
+                        Text(
+                            text = "Performans Grafikleri",
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                    }
+
+                    val charts = listOf(
+                        uiState.responseTimeChart,
+                        uiState.throughputChart,
+                        uiState.errorRateChart,
+                        uiState.apdexChart,
+                    )
+
+                    items(charts) { chartData ->
+                        MetricChartCard(
+                            chartData = chartData,
+                            onClick   = {
+                                onMetricClick(
+                                    viewModel.appId,
+                                    chartData.metricName,
+                                    chartData.valueKey,
+                                    chartData.displayName,
+                                    chartData.unit,
+                                )
+                            },
+                        )
                     }
 
                     item { Spacer(modifier = Modifier.height(16.dp)) }

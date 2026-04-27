@@ -38,6 +38,23 @@ sealed class Screen(
         fun createRoute(appId: Long) = "newrelic/app/$appId"
     }
 
+    data object NewRelicMetricDetail : Screen(
+        route = "newrelic/app/{appId}/metric/{metricName}?valueKey={valueKey}&displayName={displayName}&unit={unit}",
+        title = "Metric Detail",
+    ) {
+        fun createRoute(
+            appId: Long,
+            metricName: String,
+            valueKey: String,
+            displayName: String,
+            unit: String,
+        ): String {
+            val enc = { s: String -> java.net.URLEncoder.encode(s, "UTF-8") }
+            return "newrelic/app/$appId/metric/${enc(metricName)}" +
+                "?valueKey=${enc(valueKey)}&displayName=${enc(displayName)}&unit=${enc(unit)}"
+        }
+    }
+
     companion object {
         val bottomNavItems = listOf(Home, Grafana, NewRelic, Settings)
     }
