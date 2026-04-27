@@ -192,6 +192,7 @@ private fun PanelCard(
     panel: PanelDto,
     renderUrl: String,
     imageLoader: ImageLoader,
+    onClick: () -> Unit = {},
 ) {
     val panelIcon = when (panel.type) {
         "graph", "timeseries" -> Icons.Default.BarChart
@@ -200,7 +201,9 @@ private fun PanelCard(
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
