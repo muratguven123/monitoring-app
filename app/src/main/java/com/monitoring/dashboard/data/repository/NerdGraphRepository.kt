@@ -16,6 +16,8 @@ data class NrqlResult(
     val rawJson: String,
     val accountId: String,
     val query: String,
+    val rows: List<String> = emptyList(),
+    val missingAccountId: Boolean = false,
 )
 
 @Singleton
@@ -24,10 +26,12 @@ class NerdGraphRepository @Inject constructor(
     private val securePreferencesManager: SecurePreferencesManager,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) {
+    fun hasAccountId(): Boolean = !securePreferencesManager.getNewRelicAccountId().isNullOrBlank()
+
     suspend fun runNrql(nrql: String): NetworkResult<NrqlResult> = withContext(ioDispatcher) {
         val accountId = securePreferencesManager.getNewRelicAccountId()
         if (accountId.isNullOrBlank()) {
-            return@withContext NetworkResult.Error(message = "New Relic Account ID is required for NRQL")
+            return@withContext NetworkResult.Error(message = "MISSING_ACCOUNT_ID")
         }
         val graphql = """
             query(${'$'}accountId: Int!, ${'$'}nrql: Nrql!) {
@@ -57,6 +61,7 @@ class NerdGraphRepository @Inject constructor(
                         rawJson = body.toString(),
                         accountId = accountId,
                         query = nrql,
+                        rows = parseResultRows(body),
                     ),
                 )
             } else {
@@ -64,6 +69,27 @@ class NerdGraphRepository @Inject constructor(
             }
         } catch (e: Exception) {
             NetworkResult.Error(message = e.message, exception = e)
+        }
+    }
+
+    private fun parseResultRows(body: JsonObject): List<String> {
+        return try {
+            val results = body
+                .getAsJsonObject("data")
+                ?.getAsJsonObject("actor")
+                ?.getAsJsonObject("account")
+                ?.getAsJsonObject("nrql")
+                ?.getAsJsonArray("results")
+                ?: return emptyList()
+            results.map { element ->
+                when {
+                    element.isJsonObject -> element.asJsonObject.entrySet()
+                        .joinToString(" · ") { (k, v) -> "$k=$v" }
+                    else -> element.toString()
+                }
+            }
+        } catch (_: Exception) {
+            emptyList()
         }
     }
 

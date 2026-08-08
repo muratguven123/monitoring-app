@@ -1,7 +1,6 @@
 package com.monitoring.dashboard.ui.screens.nrql
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,6 +16,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -50,15 +50,19 @@ private val NRQL_TEMPLATES = listOf(
 data class NrqlUiState(
     val query: String = NRQL_TEMPLATES[0],
     val isLoading: Boolean = false,
-    val result: String? = null,
+    val rows: List<String> = emptyList(),
+    val rawJson: String? = null,
     val error: String? = null,
+    val missingAccountId: Boolean = false,
 )
 
 @HiltViewModel
 class NrqlViewModel @Inject constructor(
     private val nerdGraphRepository: NerdGraphRepository,
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(NrqlUiState())
+    private val _uiState = MutableStateFlow(
+        NrqlUiState(missingAccountId = !nerdGraphRepository.hasAccountId()),
+    )
     val uiState = _uiState.asStateFlow()
 
     fun onQueryChanged(query: String) {
@@ -71,13 +75,33 @@ class NrqlViewModel @Inject constructor(
 
     fun run() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null, result = null) }
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    error = null,
+                    rows = emptyList(),
+                    rawJson = null,
+                    missingAccountId = !nerdGraphRepository.hasAccountId(),
+                )
+            }
+            if (!nerdGraphRepository.hasAccountId()) {
+                _uiState.update { it.copy(isLoading = false, missingAccountId = true) }
+                return@launch
+            }
             when (val result = nerdGraphRepository.runNrql(_uiState.value.query)) {
                 is NetworkResult.Success -> _uiState.update {
-                    it.copy(isLoading = false, result = result.data.rawJson)
+                    it.copy(
+                        isLoading = false,
+                        rows = result.data.rows,
+                        rawJson = result.data.rawJson,
+                    )
                 }
                 is NetworkResult.Error -> _uiState.update {
-                    it.copy(isLoading = false, error = result.message)
+                    it.copy(
+                        isLoading = false,
+                        error = result.message,
+                        missingAccountId = result.message == "MISSING_ACCOUNT_ID",
+                    )
                 }
                 is NetworkResult.Loading -> Unit
             }
@@ -89,6 +113,7 @@ class NrqlViewModel @Inject constructor(
 @Composable
 fun NrqlScreen(
     onBackClick: () -> Unit,
+    onOpenSettings: () -> Unit = {},
     viewModel: NrqlViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -112,6 +137,19 @@ fun NrqlScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            if (uiState.missingAccountId) {
+                item {
+                    Text(
+                        text = stringResource(R.string.nrql_missing_account),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+                item {
+                    OutlinedButton(onClick = onOpenSettings, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.action_open_settings))
+                    }
+                }
+            }
             item {
                 Text(
                     text = stringResource(R.string.nrql_templates),
@@ -153,12 +191,15 @@ fun NrqlScreen(
                     Text(text = error, color = MaterialTheme.colorScheme.error)
                 }
             }
-            uiState.result?.let { result ->
-                item {
-                    Text(
-                        text = result,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
+            if (uiState.rows.isNotEmpty()) {
+                items(uiState.rows) { row ->
+                    Text(text = row, style = MaterialTheme.typography.bodyMedium)
+                }
+            } else {
+                uiState.rawJson?.let { raw ->
+                    item {
+                        Text(text = raw, style = MaterialTheme.typography.bodySmall)
+                    }
                 }
             }
         }
