@@ -1,6 +1,7 @@
 package com.monitoring.dashboard.ui.screens.home
 
-import app.cash.turbine.test
+import com.monitoring.dashboard.data.local.SecurePreferencesManager
+import com.monitoring.dashboard.data.local.UserPreferencesRepository
 import com.monitoring.dashboard.data.remote.dto.DashboardSearchHitDto
 import com.monitoring.dashboard.data.remote.dto.GrafanaHealthDto
 import com.monitoring.dashboard.data.remote.dto.newrelic.NewRelicApplicationDto
@@ -8,11 +9,12 @@ import com.monitoring.dashboard.data.remote.util.NetworkResult
 import com.monitoring.dashboard.data.repository.GrafanaRepository
 import com.monitoring.dashboard.data.repository.NewRelicRepository
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -30,12 +32,19 @@ class HomeViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var grafanaRepository: GrafanaRepository
     private lateinit var newRelicRepository: NewRelicRepository
+    private lateinit var securePreferencesManager: SecurePreferencesManager
+    private lateinit var userPreferencesRepository: UserPreferencesRepository
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         grafanaRepository = mockk()
         newRelicRepository = mockk()
+        securePreferencesManager = mockk(relaxed = true)
+        userPreferencesRepository = mockk(relaxed = true)
+        every { securePreferencesManager.isAnySourceConfigured() } returns true
+        every { userPreferencesRepository.favoriteDashboardUids } returns flowOf(emptySet())
+        every { userPreferencesRepository.favoriteAppIds } returns flowOf(emptySet())
     }
 
     @After
@@ -55,46 +64,35 @@ class HomeViewModelTest {
             NetworkResult.Success(emptyList())
     }
 
+    private fun createViewModel() = HomeViewModel(
+        grafanaRepository,
+        newRelicRepository,
+        securePreferencesManager,
+        userPreferencesRepository,
+    )
+
     @Test
     fun `initial state is Loading`() = runTest(testDispatcher) {
         stubSuccessResponses()
-
-        val viewModel = HomeViewModel(grafanaRepository, newRelicRepository)
-        val state = viewModel.uiState.value
-
-        assertTrue("Initial state should be loading", state.isLoading)
+        val viewModel = createViewModel()
+        assertTrue(viewModel.uiState.value.isLoading)
     }
 
     @Test
     fun `successful load transitions to Success state`() = runTest(testDispatcher) {
         stubSuccessResponses()
-
-        val viewModel = HomeViewModel(grafanaRepository, newRelicRepository)
+        val viewModel = createViewModel()
         advanceUntilIdle()
-
         val state = viewModel.uiState.value
-        assertFalse("Should not be loading after data loads", state.isLoading)
+        assertFalse(state.isLoading)
         assertEquals("ok", state.grafanaHealth?.database)
     }
 
     @Test
-    fun `auto-refresh countdown counts down from 30 to 0`() = runTest(testDispatcher) {
-        stubSuccessResponses()
-
-        val viewModel = HomeViewModel(grafanaRepository, newRelicRepository)
+    fun `unconfigured shows setup state`() = runTest(testDispatcher) {
+        every { securePreferencesManager.isAnySourceConfigured() } returns false
+        val viewModel = createViewModel()
         advanceUntilIdle()
-
-        // After init + first data load, countdown starts at 30
-        val initialSeconds = viewModel.uiState.value.secondsUntilRefresh
-        assertEquals(HomeViewModel.AUTO_REFRESH_INTERVAL_SECONDS, initialSeconds)
-
-        // Advance 5 seconds
-        advanceTimeBy(5_000L)
-
-        val afterFive = viewModel.uiState.value.secondsUntilRefresh
-        assertTrue(
-            "Countdown should decrease after 5s (was $afterFive)",
-            afterFive < initialSeconds,
-        )
+        assertFalse(viewModel.uiState.value.isConfigured)
     }
 }

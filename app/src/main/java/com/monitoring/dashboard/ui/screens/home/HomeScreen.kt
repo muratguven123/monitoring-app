@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,11 +45,41 @@ import com.monitoring.dashboard.ui.theme.StatusWarning
 fun HomeScreen(
     onNavigateToGrafana: () -> Unit,
     onNavigateToNewRelic: () -> Unit,
+    onNavigateToSettings: () -> Unit,
+    onNavigateToAlerts: () -> Unit,
     onNavigateToGrafanaDashboard: (String) -> Unit,
     onNavigateToNewRelicApp: (Long) -> Unit,
+    onNavigateToGithub: () -> Unit = {},
+    onNavigateToNrql: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    if (!uiState.isConfigured) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = stringResource(R.string.home_setup_title),
+                style = MaterialTheme.typography.headlineSmall,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.home_setup_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = onNavigateToSettings) {
+                Text(stringResource(R.string.action_configure_now))
+            }
+        }
+        return
+    }
 
     if (uiState.isLoading && uiState.grafanaHealth == null && uiState.newRelicApps.isEmpty()) {
         LoadingIndicator()
@@ -85,6 +116,17 @@ fun HomeScreen(
             }
         }
 
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = onNavigateToNrql) {
+                    Text(stringResource(R.string.action_nrql))
+                }
+                TextButton(onClick = onNavigateToGithub) {
+                    Text(stringResource(R.string.action_github_status))
+                }
+            }
+        }
+
         // ── Alert Violations Banner ─────────────────────────────────
         if (uiState.openViolations.isNotEmpty()) {
             item {
@@ -95,7 +137,35 @@ fun HomeScreen(
                     },
                     icon = Icons.Default.Warning,
                     iconTint = StatusCritical,
-                    onClick = onNavigateToNewRelic,
+                    onClick = onNavigateToAlerts,
+                )
+            }
+        }
+
+        if (uiState.watchlistDashboards.isNotEmpty() || uiState.watchlistApps.isNotEmpty()) {
+            item {
+                Text(
+                    text = stringResource(R.string.home_watchlist),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
+            items(uiState.watchlistDashboards) { dashboard ->
+                MonitoringCard(
+                    title = dashboard.title,
+                    subtitle = dashboard.folderTitle ?: stringResource(R.string.grafana_folder_default),
+                    icon = Icons.Default.MonitorHeart,
+                    iconTint = GrafanaOrange,
+                    onClick = { onNavigateToGrafanaDashboard(dashboard.uid) },
+                )
+            }
+            items(uiState.watchlistApps) { app ->
+                MonitoringCard(
+                    title = app.name,
+                    subtitle = app.language ?: stringResource(R.string.status_no_data),
+                    icon = Icons.Default.Insights,
+                    iconTint = NewRelicGreen,
+                    onClick = { onNavigateToNewRelicApp(app.id) },
                 )
             }
         }

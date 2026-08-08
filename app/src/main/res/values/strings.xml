@@ -137,4 +137,72 @@
 
     <!-- ── Severity Labels ───────────────────────────────────────────── -->
     <string name="severity_alert">Alert</string>
+
+    <!-- ── Onboarding ────────────────────────────────────────────────── -->
+    <string name="onboarding_title">Welcome to Monitoring</string>
+    <string name="onboarding_subtitle">Connect Grafana and/or New Relic to get started.</string>
+    <string name="onboarding_notifications_title">Alert notifications</string>
+    <string name="onboarding_notifications_body">Allow notifications so we can alert you when new New Relic violations open, even when the app is in the background.</string>
+    <string name="onboarding_connect_title">Test your connection</string>
+    <string name="onboarding_connect_body">We will verify your credentials before opening the dashboard.</string>
+    <string name="action_next">Next</string>
+    <string name="action_skip_grafana">Skip Grafana</string>
+    <string name="action_allow_notifications">Allow notifications</string>
+    <string name="action_skip_for_now">Skip for now</string>
+    <string name="action_get_started">Get started</string>
+    <string name="action_configure_now">Configure now</string>
+    <string name="action_share">Share</string>
+    <string name="action_mute">Mute 4 hours</string>
+    <string name="action_favorite">Favorite</string>
+    <string name="action_load_more">Load more</string>
+    <string name="action_datasources">Datasources</string>
+    <string name="action_nrql">NRQL</string>
+    <string name="action_run_nrql">Run NRQL</string>
+    <string name="action_github_status">GitHub</string>
+    <string name="action_unlock">Unlock</string>
+    <string name="action_export">Export</string>
+
+    <string name="home_setup_title">No data sources configured</string>
+    <string name="home_setup_body">Add your Grafana or New Relic credentials to start monitoring.</string>
+    <string name="home_watchlist">Watchlist</string>
+
+    <string name="screen_alerts_title">Alerts</string>
+    <string name="alerts_empty">No alerts match this filter</string>
+    <string name="alert_filter_all">All</string>
+    <string name="alert_filter_open">Open</string>
+    <string name="alert_filter_critical">Critical</string>
+    <string name="alert_filter_resolved">Resolved</string>
+
+    <string name="settings_newrelic_account_helper">Optional for REST; required for NRQL / NerdGraph queries.</string>
+    <string name="settings_environment_section">Environment profile</string>
+    <string name="profile_default">Default</string>
+    <string name="profile_staging">Staging</string>
+    <string name="profile_prod">Prod</string>
+    <string name="settings_github_section">GitHub Actions</string>
+    <string name="settings_github_token_label">GitHub token</string>
+    <string name="settings_github_repo_label">Repository</string>
+    <string name="settings_github_repo_placeholder">owner/repo</string>
+    <string name="settings_notifications_section">Notification preferences</string>
+    <string name="settings_critical_only">Critical alerts only</string>
+    <string name="settings_quiet_hours">Quiet hours (22:00–07:00)</string>
+    <string name="settings_app_lock">Biometric / PIN app lock</string>
+    <string name="settings_thresholds_section">Metric thresholds</string>
+    <string name="settings_thresholds_hint">Values used for green/yellow/red coloring on New Relic metrics.</string>
+    <string name="error_settings_save">Settings could not be saved. Please try again.</string>
+
+    <string name="screen_datasources_title">Datasources</string>
+    <string name="datasources_empty">No datasources found</string>
+    <string name="screen_nrql_title">NRQL Explorer</string>
+    <string name="nrql_templates">Templates</string>
+    <string name="nrql_query_label">NRQL query</string>
+    <string name="screen_github_title">GitHub Actions</string>
+    <string name="github_empty">No recent workflow runs</string>
+
+    <string name="lock_title">Unlock Monitoring</string>
+    <string name="lock_subtitle">Authenticate to view sensitive operations data.</string>
+
+    <string name="widget_description">Service health and open alerts at a glance</string>
+    <string name="widget_title">Monitoring</string>
+    <string name="widget_alerts">%d open alerts</string>
+    <string name="widget_no_data">Open app to refresh</string>
 </resources>
