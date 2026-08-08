@@ -1,13 +1,15 @@
 package com.monitoring.dashboard.ui.screens.home
 
+import com.monitoring.dashboard.data.DataRefreshBus
 import com.monitoring.dashboard.data.local.SecurePreferencesManager
 import com.monitoring.dashboard.data.local.UserPreferencesRepository
-import com.monitoring.dashboard.data.remote.dto.DashboardSearchHitDto
-import com.monitoring.dashboard.data.remote.dto.GrafanaHealthDto
 import com.monitoring.dashboard.data.remote.dto.newrelic.NewRelicApplicationDto
 import com.monitoring.dashboard.data.remote.util.NetworkResult
-import com.monitoring.dashboard.data.repository.GrafanaRepository
 import com.monitoring.dashboard.data.repository.NewRelicRepository
+import com.monitoring.dashboard.domain.model.GrafanaHealth
+import com.monitoring.dashboard.domain.usecase.CheckGrafanaHealthUseCase
+import com.monitoring.dashboard.domain.usecase.GetDashboardsUseCase
+import com.monitoring.dashboard.domain.usecase.GetNewRelicApplicationsUseCase
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -30,18 +32,24 @@ import org.junit.Test
 class HomeViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
-    private lateinit var grafanaRepository: GrafanaRepository
+    private lateinit var checkGrafanaHealthUseCase: CheckGrafanaHealthUseCase
+    private lateinit var getDashboardsUseCase: GetDashboardsUseCase
+    private lateinit var getNewRelicApplicationsUseCase: GetNewRelicApplicationsUseCase
     private lateinit var newRelicRepository: NewRelicRepository
     private lateinit var securePreferencesManager: SecurePreferencesManager
     private lateinit var userPreferencesRepository: UserPreferencesRepository
+    private lateinit var dataRefreshBus: DataRefreshBus
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        grafanaRepository = mockk()
+        checkGrafanaHealthUseCase = mockk()
+        getDashboardsUseCase = mockk()
+        getNewRelicApplicationsUseCase = mockk()
         newRelicRepository = mockk()
         securePreferencesManager = mockk(relaxed = true)
         userPreferencesRepository = mockk(relaxed = true)
+        dataRefreshBus = DataRefreshBus()
         every { securePreferencesManager.isAnySourceConfigured() } returns true
         every { userPreferencesRepository.favoriteDashboardUids } returns flowOf(emptySet())
         every { userPreferencesRepository.favoriteAppIds } returns flowOf(emptySet())
@@ -53,22 +61,25 @@ class HomeViewModelTest {
     }
 
     private fun stubSuccessResponses() {
-        coEvery { grafanaRepository.getHealth() } returns NetworkResult.Success(
-            GrafanaHealthDto(commit = "abc", database = "ok", version = "10.0"),
+        coEvery { checkGrafanaHealthUseCase() } returns NetworkResult.Success(
+            GrafanaHealth(version = "10.0", database = "ok", isHealthy = true),
         )
-        coEvery { grafanaRepository.searchDashboards(any(), any(), any(), any(), any(), any()) } returns
-            NetworkResult.Success(emptyList<DashboardSearchHitDto>())
-        coEvery { newRelicRepository.getApplications(any()) } returns
+        coEvery { getDashboardsUseCase(any(), any(), any(), any()) } returns
+            NetworkResult.Success(emptyList())
+        coEvery { getNewRelicApplicationsUseCase(any()) } returns
             NetworkResult.Success(emptyList<NewRelicApplicationDto>())
         coEvery { newRelicRepository.getAlertViolations(any()) } returns
             NetworkResult.Success(emptyList())
     }
 
     private fun createViewModel() = HomeViewModel(
-        grafanaRepository,
+        checkGrafanaHealthUseCase,
+        getDashboardsUseCase,
+        getNewRelicApplicationsUseCase,
         newRelicRepository,
         securePreferencesManager,
         userPreferencesRepository,
+        dataRefreshBus,
     )
 
     @Test
@@ -86,6 +97,7 @@ class HomeViewModelTest {
         val state = viewModel.uiState.value
         assertFalse(state.isLoading)
         assertEquals("ok", state.grafanaHealth?.database)
+        assertTrue(state.grafanaHealth?.isHealthy == true)
     }
 
     @Test
@@ -94,5 +106,22 @@ class HomeViewModelTest {
         val viewModel = createViewModel()
         advanceUntilIdle()
         assertFalse(viewModel.uiState.value.isConfigured)
+    }
+
+    @Test
+    fun `cached success sets isShowingCachedData`() = runTest(testDispatcher) {
+        coEvery { checkGrafanaHealthUseCase() } returns NetworkResult.Success(
+            GrafanaHealth(version = "10.0", database = "ok", isHealthy = true),
+        )
+        coEvery { getDashboardsUseCase(any(), any(), any(), any()) } returns
+            NetworkResult.Success(emptyList(), fromCache = true)
+        coEvery { getNewRelicApplicationsUseCase(any()) } returns
+            NetworkResult.Success(emptyList())
+        coEvery { newRelicRepository.getAlertViolations(any()) } returns
+            NetworkResult.Success(emptyList())
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.isShowingCachedData)
     }
 }
