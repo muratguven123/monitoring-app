@@ -58,7 +58,7 @@ class NewRelicRepositoryImpl @Inject constructor(
                 val cached = newRelicDao.getAll()
                 if (cached.isNotEmpty()) {
                     Timber.w("New Relic network error, serving ${cached.size} cached apps")
-                    NetworkResult.Success(cached.map { it.toDto() })
+                    NetworkResult.Success(cached.map { it.toDto() }, fromCache = true)
                 } else {
                     networkResult
                 }
@@ -119,7 +119,7 @@ class NewRelicRepositoryImpl @Inject constructor(
                 val cached = if (onlyOpen == true) alertDao.getOpen() else alertDao.getAll()
                 if (cached.isNotEmpty()) {
                     Timber.w("New Relic network error, serving ${cached.size} cached violations")
-                    NetworkResult.Success(cached.map { it.toDto() })
+                    NetworkResult.Success(cached.map { it.toDto() }, fromCache = true)
                 } else {
                     networkResult
                 }

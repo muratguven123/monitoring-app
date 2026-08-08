@@ -5,7 +5,10 @@ package com.monitoring.dashboard.data.remote.util
  */
 sealed class NetworkResult<out T> {
 
-    data class Success<out T>(val data: T) : NetworkResult<T>()
+    data class Success<out T>(
+        val data: T,
+        val fromCache: Boolean = false,
+    ) : NetworkResult<T>()
 
     data class Error(
         val code: Int? = null,
@@ -25,9 +28,8 @@ sealed class NetworkResult<out T> {
     }
 
     fun <R> map(transform: (T) -> R): NetworkResult<R> = when (this) {
-        is Success -> Success(transform(data))
+        is Success -> Success(transform(data), fromCache = fromCache)
         is Error -> this
         is Loading -> Loading
     }
 }
-

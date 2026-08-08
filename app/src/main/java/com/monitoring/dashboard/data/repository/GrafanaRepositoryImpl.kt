@@ -71,7 +71,7 @@ class GrafanaRepositoryImpl @Inject constructor(
                 val cached = grafanaDao.getAll()
                 if (cached.isNotEmpty()) {
                     Timber.w("Grafana network error, serving ${cached.size} cached dashboards")
-                    NetworkResult.Success(cached.map { it.toDto() })
+                    NetworkResult.Success(cached.map { it.toDto() }, fromCache = true)
                 } else {
                     networkResult
                 }
