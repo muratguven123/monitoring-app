@@ -2,6 +2,7 @@ package com.monitoring.dashboard.ui.screens.newrelic
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.monitoring.dashboard.data.local.UserPreferencesRepository
 import com.monitoring.dashboard.data.remote.dto.newrelic.NewRelicApplicationDto
 import com.monitoring.dashboard.data.remote.util.NetworkResult
 import com.monitoring.dashboard.data.repository.NewRelicRepository
@@ -18,17 +19,24 @@ data class NewRelicAppsUiState(
     val applications: List<NewRelicApplicationDto> = emptyList(),
     val errorMessage: String? = null,
     val searchQuery: String = "",
+    val favoriteAppIds: Set<String> = emptySet(),
 )
 
 @HiltViewModel
 class NewRelicAppsViewModel @Inject constructor(
     private val newRelicRepository: NewRelicRepository,
+    private val userPreferencesRepository: UserPreferencesRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NewRelicAppsUiState())
     val uiState: StateFlow<NewRelicAppsUiState> = _uiState.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            userPreferencesRepository.favoriteAppIds.collect { ids ->
+                _uiState.update { it.copy(favoriteAppIds = ids) }
+            }
+        }
         loadApplications()
     }
 
@@ -51,5 +59,9 @@ class NewRelicAppsViewModel @Inject constructor(
     fun onSearchQueryChanged(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
         loadApplications()
+    }
+
+    fun toggleFavorite(appId: Long) {
+        viewModelScope.launch { userPreferencesRepository.toggleFavoriteApp(appId) }
     }
 }

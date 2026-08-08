@@ -103,7 +103,7 @@ Bu desen sayesinde uygulama, internet olmadan bile son verileri gösterebilir.
 - **NewRelicAppDetailScreen** — Renk kodlu performans metrikleri (Apdex, response time,
   error rate, throughput, host/instance sayıları), End User özeti, açık violation'lar.
 - **SettingsScreen** — Grafana ve New Relic API ayarları (URL, API key, Account ID).
-- **DemoPreviewScreen** — Sahte verilerle tam canlı önizleme (sunum modu).
+- **AlertsScreen** — Alert inbox, filtreler, mute ve paylaşım.
 
 ### 4.6 `ui/components`
 - **MonitoringCard** — Genel amaçlı kart (ikon, başlık, alt başlık, trailing content).
@@ -141,7 +141,7 @@ Bu desen sayesinde uygulama, internet olmadan bile son verileri gösterebilir.
 | API key güvenli depolama             | ✅    |
 | String externalization (90+ kaynak)  | ✅    |
 | Arama / filtreleme                   | ✅    |
-| Demo/sunum modu                      | ✅    |
+| Demo/sunum modu                      | ❌ kaldırıldı |
 | Material 3 & Dark Mode desteği       | ✅    |
 
 ---

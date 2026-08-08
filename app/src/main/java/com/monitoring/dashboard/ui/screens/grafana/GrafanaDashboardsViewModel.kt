@@ -2,6 +2,7 @@ package com.monitoring.dashboard.ui.screens.grafana
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.monitoring.dashboard.data.local.UserPreferencesRepository
 import com.monitoring.dashboard.data.remote.dto.DashboardSearchHitDto
 import com.monitoring.dashboard.data.remote.util.NetworkResult
 import com.monitoring.dashboard.data.repository.GrafanaRepository
@@ -18,27 +19,57 @@ data class GrafanaDashboardsUiState(
     val dashboards: List<DashboardSearchHitDto> = emptyList(),
     val errorMessage: String? = null,
     val searchQuery: String = "",
+    val page: Int = 1,
+    val canLoadMore: Boolean = false,
+    val favoriteUids: Set<String> = emptySet(),
 )
 
 @HiltViewModel
 class GrafanaDashboardsViewModel @Inject constructor(
     private val grafanaRepository: GrafanaRepository,
+    private val userPreferencesRepository: UserPreferencesRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GrafanaDashboardsUiState())
     val uiState: StateFlow<GrafanaDashboardsUiState> = _uiState.asStateFlow()
 
     init {
-        loadDashboards()
+        viewModelScope.launch {
+            userPreferencesRepository.favoriteDashboardUids.collect { favs ->
+                _uiState.update { it.copy(favoriteUids = favs) }
+            }
+        }
+        loadDashboards(reset = true)
     }
 
-    fun loadDashboards() {
-        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+    fun loadDashboards(reset: Boolean = true) {
+        _uiState.update {
+            it.copy(
+                isLoading = reset,
+                errorMessage = null,
+                page = if (reset) 1 else it.page,
+            )
+        }
         viewModelScope.launch {
+            val page = if (reset) 1 else _uiState.value.page
             val query = _uiState.value.searchQuery.ifBlank { null }
-            when (val result = grafanaRepository.searchDashboards(query = query, type = "dash-db")) {
+            when (
+                val result = grafanaRepository.searchDashboards(
+                    query = query,
+                    type = "dash-db",
+                    limit = PAGE_SIZE,
+                    page = page,
+                )
+            ) {
                 is NetworkResult.Success -> _uiState.update {
-                    it.copy(isLoading = false, dashboards = result.data, errorMessage = null)
+                    val merged = if (reset) result.data else it.dashboards + result.data
+                    it.copy(
+                        isLoading = false,
+                        dashboards = merged,
+                        errorMessage = null,
+                        page = page,
+                        canLoadMore = result.data.size >= PAGE_SIZE,
+                    )
                 }
                 is NetworkResult.Error -> _uiState.update {
                     it.copy(isLoading = false, errorMessage = result.message ?: "Failed to load dashboards")
@@ -48,8 +79,21 @@ class GrafanaDashboardsViewModel @Inject constructor(
         }
     }
 
+    fun loadMore() {
+        _uiState.update { it.copy(page = it.page + 1) }
+        loadDashboards(reset = false)
+    }
+
     fun onSearchQueryChanged(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
-        loadDashboards()
+        loadDashboards(reset = true)
+    }
+
+    fun toggleFavorite(uid: String) {
+        viewModelScope.launch { userPreferencesRepository.toggleFavoriteDashboard(uid) }
+    }
+
+    companion object {
+        private const val PAGE_SIZE = 50
     }
 }

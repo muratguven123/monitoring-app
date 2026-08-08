@@ -14,7 +14,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -40,6 +42,7 @@ import com.monitoring.dashboard.ui.theme.StatusWarning
 @Composable
 fun NewRelicAppsScreen(
     onAppClick: (Long) -> Unit,
+    onNrqlClick: () -> Unit = {},
     viewModel: NewRelicAppsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -49,11 +52,21 @@ fun NewRelicAppsScreen(
             .fillMaxSize()
             .padding(top = 16.dp),
     ) {
-        Text(
-            text = stringResource(R.string.screen_newrelic_apps_title),
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(horizontal = 16.dp),
-        )
+        androidx.compose.foundation.layout.Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.screen_newrelic_apps_title),
+                style = MaterialTheme.typography.headlineMedium,
+            )
+            androidx.compose.material3.TextButton(onClick = onNrqlClick) {
+                Text(stringResource(R.string.action_nrql))
+            }
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -111,6 +124,17 @@ fun NewRelicAppsScreen(
                             icon = Icons.Default.Insights,
                             iconTint = NewRelicGreen,
                             trailingContent = {
+                                IconButton(onClick = { viewModel.toggleFavorite(app.id) }) {
+                                    Icon(
+                                        Icons.Default.Star,
+                                        contentDescription = stringResource(R.string.action_favorite),
+                                        tint = if (app.id.toString() in uiState.favoriteAppIds) {
+                                            NewRelicGreen
+                                        } else {
+                                            StatusGray
+                                        },
+                                    )
+                                }
                                 StatusIndicator(
                                     color = healthColor,
                                     label = app.healthStatus?.replaceFirstChar { it.uppercase() }

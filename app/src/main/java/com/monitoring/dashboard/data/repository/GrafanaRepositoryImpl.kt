@@ -130,7 +130,7 @@ class GrafanaRepositoryImpl @Inject constructor(
         slug = "",
         type = "dash-db",
         tags = if (tags.isBlank()) emptyList() else tags.split(","),
-        isStarred = false,
+        isStarred = isStarred,
         folderTitle = folderTitle,
     )
 

@@ -3,6 +3,8 @@ package com.monitoring.dashboard.ui.screens.newrelic
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.monitoring.dashboard.data.local.MetricThresholds
+import com.monitoring.dashboard.data.local.UserPreferencesRepository
 import com.monitoring.dashboard.data.remote.dto.newrelic.AlertViolationDto
 import com.monitoring.dashboard.data.remote.dto.newrelic.MetricDataDto
 import com.monitoring.dashboard.data.remote.dto.newrelic.NewRelicApplicationDto
@@ -31,6 +33,7 @@ data class NewRelicAppDetailUiState(
     val application: NewRelicApplicationDto? = null,
     val metricData: MetricDataDto? = null,
     val violations: List<AlertViolationDto> = emptyList(),
+    val thresholds: MetricThresholds = MetricThresholds(),
     val errorMessage: String? = null,
     // Grafik verileri
     val responseTimeChart: MetricChartData = MetricChartData(
@@ -63,6 +66,7 @@ data class NewRelicAppDetailUiState(
 class NewRelicAppDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val newRelicRepository: NewRelicRepository,
+    private val userPreferencesRepository: UserPreferencesRepository,
 ) : ViewModel() {
 
     val appId: Long = checkNotNull(savedStateHandle["appId"])
@@ -71,6 +75,11 @@ class NewRelicAppDetailViewModel @Inject constructor(
     val uiState: StateFlow<NewRelicAppDetailUiState> = _uiState.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            userPreferencesRepository.metricThresholds.collect { thresholds ->
+                _uiState.update { it.copy(thresholds = thresholds) }
+            }
+        }
         loadAppDetail()
     }
 

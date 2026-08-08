@@ -39,7 +39,8 @@ import com.monitoring.dashboard.ui.components.LoadingIndicator
 import com.monitoring.dashboard.ui.components.MetricItem
 import com.monitoring.dashboard.ui.components.ServiceHealth
 import com.monitoring.dashboard.ui.components.ServiceStatusCard
-import com.monitoring.dashboard.ui.components.metricStatusColor
+import com.monitoring.dashboard.domain.model.MetricHealth
+import com.monitoring.dashboard.domain.model.MetricThresholdEvaluator
 import com.monitoring.dashboard.ui.theme.StatusCritical
 import com.monitoring.dashboard.ui.theme.StatusHealthy
 import com.monitoring.dashboard.ui.theme.StatusWarning
@@ -130,10 +131,8 @@ fun NewRelicAppDetailScreen(
                                             ColoredMetricItem(
                                                 label = stringResource(R.string.metric_response_time),
                                                 value = "${String.format("%.0f", it)}ms",
-                                                color = metricStatusColor(
-                                                    value = it.toFloat(),
-                                                    greenBelow = 500f,
-                                                    yellowBelow = 2000f,
+                                                color = healthColor(
+                                                    MetricThresholdEvaluator.responseTimeMs(it, uiState.thresholds),
                                                 ),
                                             )
                                         }
@@ -147,10 +146,8 @@ fun NewRelicAppDetailScreen(
                                             ColoredMetricItem(
                                                 label = stringResource(R.string.metric_error_rate),
                                                 value = "${String.format("%.2f", it)}%",
-                                                color = metricStatusColor(
-                                                    value = it.toFloat(),
-                                                    greenBelow = 1f,
-                                                    yellowBelow = 5f,
+                                                color = healthColor(
+                                                    MetricThresholdEvaluator.errorRatePercent(it, uiState.thresholds),
                                                 ),
                                             )
                                         }
@@ -164,7 +161,9 @@ fun NewRelicAppDetailScreen(
                                             ColoredMetricItem(
                                                 label = stringResource(R.string.metric_apdex_score),
                                                 value = String.format("%.2f", it),
-                                                color = apdexColor(it.toFloat()),
+                                                color = healthColor(
+                                                    MetricThresholdEvaluator.apdex(it, uiState.thresholds),
+                                                ),
                                             )
                                         }
                                         summary.hostCount?.let {
@@ -211,10 +210,8 @@ fun NewRelicAppDetailScreen(
                                         ColoredMetricItem(
                                             label = stringResource(R.string.metric_page_load),
                                             value = "${String.format("%.0f", it)}ms",
-                                            color = metricStatusColor(
-                                                value = it.toFloat(),
-                                                greenBelow = 3000f,
-                                                yellowBelow = 7000f,
+                                            color = healthColor(
+                                                MetricThresholdEvaluator.pageLoadMs(it, uiState.thresholds),
                                             ),
                                         )
                                     }
@@ -323,12 +320,8 @@ fun NewRelicAppDetailScreen(
     }
 }
 
-/**
- * Apdex color: green >= 0.9, yellow 0.7-0.9, red < 0.7
- */
-@Composable
-private fun apdexColor(score: Float): Color = when {
-    score >= 0.9f -> StatusHealthy
-    score >= 0.7f -> StatusWarning
-    else -> StatusCritical
+private fun healthColor(health: MetricHealth): Color = when (health) {
+    MetricHealth.HEALTHY -> StatusHealthy
+    MetricHealth.WARNING -> StatusWarning
+    MetricHealth.CRITICAL -> StatusCritical
 }
