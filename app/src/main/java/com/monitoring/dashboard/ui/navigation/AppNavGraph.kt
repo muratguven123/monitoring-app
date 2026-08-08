@@ -27,6 +27,7 @@ import com.monitoring.dashboard.ui.screens.settings.SettingsScreen
 fun AppNavGraph(
     navController: NavHostController,
     startDestination: String,
+    onUnlocked: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     NavHost(
@@ -47,6 +48,7 @@ fun AppNavGraph(
         composable(Screen.Lock.route) {
             AppLockScreen(
                 onUnlocked = {
+                    onUnlocked()
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Lock.route) { inclusive = true }
                     }
@@ -158,11 +160,17 @@ fun AppNavGraph(
         }
 
         composable(Screen.Nrql.route) {
-            NrqlScreen(onBackClick = { navController.popBackStack() })
+            NrqlScreen(
+                onBackClick = { navController.popBackStack() },
+                onOpenSettings = { navController.navigate(Screen.Settings.route) },
+            )
         }
 
         composable(Screen.GithubStatus.route) {
-            GithubStatusScreen(onBackClick = { navController.popBackStack() })
+            GithubStatusScreen(
+                onBackClick = { navController.popBackStack() },
+                onOpenSettings = { navController.navigate(Screen.Settings.route) },
+            )
         }
 
         composable(Screen.Settings.route) {
