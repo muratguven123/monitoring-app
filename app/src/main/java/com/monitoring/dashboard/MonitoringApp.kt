@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import androidx.work.WorkManager
+import com.monitoring.dashboard.crash.CrashReporting
 import com.monitoring.dashboard.notification.AlertNotificationHelper
 import com.monitoring.dashboard.worker.AlertMonitorWorker
 import dagger.hilt.android.HiltAndroidApp
@@ -39,10 +40,9 @@ class MonitoringApp : Application(), Configuration.Provider {
         super.onCreate()
 
         if (BuildConfig.DEBUG) {
-            // Full verbose logging in debug builds
             Timber.plant(Timber.DebugTree())
         } else {
-            // Production: only warnings and errors, no sensitive data exposed
+            CrashReporting.install(CrashReporting.TimberBreadcrumbSink())
             Timber.plant(ProductionTree())
         }
 
@@ -71,11 +71,9 @@ class MonitoringApp : Application(), Configuration.Provider {
             val sanitized = message
                 .replace(Regex("Bearer [A-Za-z0-9\\-._~+/]+=*"), "Bearer [REDACTED]")
                 .replace(Regex("Api-Key: [A-Za-z0-9\\-]+"), "Api-Key: [REDACTED]")
-            // Forward to Android logcat (WARN/ERROR only)
             Log.println(priority, tag ?: "MonitoringApp", sanitized)
-            // TODO: forward to your crash reporting SDK here, e.g.:
-            // FirebaseCrashlytics.getInstance().log(sanitized)
-            // t?.let { FirebaseCrashlytics.getInstance().recordException(it) }
+            CrashReporting.log(sanitized)
+            t?.let { CrashReporting.record(it) }
         }
     }
 }
