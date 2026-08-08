@@ -30,7 +30,9 @@ object DatabaseModule {
             context,
             MonitoringDatabase::class.java,
             "monitoring_database",
-        ).build()
+        )
+            .fallbackToDestructiveMigration()
+            .build()
 
     @Provides
     fun provideGrafanaDao(database: MonitoringDatabase): GrafanaDao =

@@ -9,74 +9,41 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import com.monitoring.dashboard.data.local.dao.AlertDao
-import com.monitoring.dashboard.data.local.entity.AlertViolationEntity
 import com.monitoring.dashboard.data.remote.util.NetworkResult
-import com.monitoring.dashboard.data.repository.NewRelicRepository
+import com.monitoring.dashboard.domain.usecase.ShouldNotifyViolationUseCase
+import com.monitoring.dashboard.domain.usecase.SyncAlertSnapshotUseCase
 import com.monitoring.dashboard.notification.AlertNotificationHelper
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 
-/**
- * Background worker that periodically checks New Relic for open alert violations
- * and fires a push notification when new ones are detected since the last run.
- *
- * Violation deduplication is backed by Room DB ([AlertDao]) instead of in-memory
- * or SharedPreferences storage.
- *
- * Scheduled via [schedule] as a unique periodic task so it survives app restarts.
- * Requires network connectivity (CONNECTED constraint) before executing.
- */
 @HiltWorker
 class AlertMonitorWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
-    private val newRelicRepository: NewRelicRepository,
+    private val syncAlertSnapshotUseCase: SyncAlertSnapshotUseCase,
+    private val shouldNotifyViolationUseCase: ShouldNotifyViolationUseCase,
     private val notificationHelper: AlertNotificationHelper,
-    private val alertDao: AlertDao,
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
         Timber.d("AlertMonitorWorker: checking for new violations…")
         return try {
-            when (val result = newRelicRepository.getAlertViolations(onlyOpen = true)) {
+            when (val result = syncAlertSnapshotUseCase()) {
                 is NetworkResult.Success -> {
-                    val violations = result.data
-                    val currentIds = violations.map { it.id }.toSet()
-
-                    // Read previously cached violation IDs from Room
-                    val previousIds = alertDao.getAll().map { it.id }.toSet()
-
-                    // Detect violations that weren't in the last snapshot
-                    val newViolations = violations.filter { it.id !in previousIds }
-
-                    if (newViolations.isNotEmpty()) {
-                        Timber.i("AlertMonitorWorker: ${newViolations.size} new violation(s) detected")
-                        val isCritical = newViolations.any { it.priority?.lowercase() == "critical" }
+                    val toNotify = shouldNotifyViolationUseCase(result.data.newlyOpened)
+                    if (toNotify.isNotEmpty()) {
+                        Timber.i("AlertMonitorWorker: ${toNotify.size} new violation(s) to notify")
+                        val isCritical = toNotify.any { it.severity?.equals("critical", true) == true }
                         notificationHelper.showAlertNotification(
-                            newViolationCount = newViolations.size,
-                            policyName = newViolations.firstOrNull()?.policyName,
+                            newViolationCount = toNotify.size,
+                            policyName = toNotify.firstOrNull()?.policyName,
                             isCritical = isCritical,
                         )
                     } else {
-                        Timber.d("AlertMonitorWorker: no new violations")
+                        Timber.d("AlertMonitorWorker: no notifiable new violations")
                     }
-
-                    // Persist current snapshot to Room for next run comparison
-                    alertDao.deleteAll()
-                    alertDao.insertAll(
-                        violations.map { v ->
-                            AlertViolationEntity(
-                                id = v.id,
-                                label = v.label,
-                                policyName = v.policyName,
-                                openedAt = v.openedAt,
-                                severity = v.priority,
-                            )
-                        },
-                    )
                     Result.success()
                 }
                 is NetworkResult.Error -> {
@@ -92,23 +59,16 @@ class AlertMonitorWorker @AssistedInject constructor(
     }
 
     companion object {
-        /** Unique name used to avoid duplicate enqueues. */
         const val WORK_NAME = "alert_monitor_periodic_work"
-
-        /** How often the worker runs. WorkManager enforces a minimum of 15 minutes. */
         private const val REPEAT_INTERVAL_MINUTES = 15L
 
-        /**
-         * Enqueues (or keeps) the periodic alert-monitoring task.
-         * Call once from Application.onCreate(); safe to call multiple times.
-         */
-        fun schedule(workManager: WorkManager) {
+        fun schedule(workManager: WorkManager, intervalMinutes: Long = REPEAT_INTERVAL_MINUTES) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
 
             val request = PeriodicWorkRequestBuilder<AlertMonitorWorker>(
-                REPEAT_INTERVAL_MINUTES,
+                intervalMinutes.coerceAtLeast(15L),
                 TimeUnit.MINUTES,
             )
                 .setConstraints(constraints)
@@ -116,11 +76,11 @@ class AlertMonitorWorker @AssistedInject constructor(
 
             workManager.enqueueUniquePeriodicWork(
                 WORK_NAME,
-                ExistingPeriodicWorkPolicy.KEEP,
+                ExistingPeriodicWorkPolicy.UPDATE,
                 request,
             )
 
-            Timber.i("AlertMonitorWorker scheduled (interval = ${REPEAT_INTERVAL_MINUTES}min)")
+            Timber.i("AlertMonitorWorker scheduled (interval = ${intervalMinutes}min)")
         }
     }
 }

@@ -76,20 +76,22 @@ class AlertDaoTest {
     }
 
     @Test
-    fun deleteOlderThan_removesStaleEntries() = runTest {
+    fun deleteOlderThan_removesStaleResolvedEntries() = runTest {
         val now = System.currentTimeMillis()
         dao.insertAll(
             listOf(
-                entity(1, "Old", cachedAt = now - 10_000),
-                entity(2, "Fresh", cachedAt = now),
+                entity(1, "Old", cachedAt = now - 10_000).copy(isOpen = false),
+                entity(2, "Fresh", cachedAt = now).copy(isOpen = false),
+                entity(3, "StillOpen", cachedAt = now - 10_000).copy(isOpen = true),
             ),
         )
 
         dao.deleteOlderThan(now - 5_000)
 
         val remaining = dao.getAll()
-        assertEquals(1, remaining.size)
-        assertEquals("Fresh", remaining[0].label)
+        assertEquals(2, remaining.size)
+        assertTrue(remaining.any { it.label == "Fresh" })
+        assertTrue(remaining.any { it.label == "StillOpen" })
     }
 
     @Test

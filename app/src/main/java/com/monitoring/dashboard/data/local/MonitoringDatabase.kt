@@ -15,7 +15,7 @@ import com.monitoring.dashboard.data.local.entity.NewRelicAppEntity
         NewRelicAppEntity::class,
         AlertViolationEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 abstract class MonitoringDatabase : RoomDatabase() {

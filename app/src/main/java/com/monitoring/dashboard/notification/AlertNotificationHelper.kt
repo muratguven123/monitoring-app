@@ -6,29 +6,22 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.monitoring.dashboard.MainActivity
 import com.monitoring.dashboard.R
+import com.monitoring.dashboard.ui.navigation.Screen
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Manages notification channel creation and alert violation notifications.
- *
- * Two channels are provided:
- *  - [CHANNEL_CRITICAL] – High importance, for "critical" priority violations.
- *  - [CHANNEL_WARNING]  – Default importance, for "warning" priority violations.
- */
 @Singleton
 class AlertNotificationHelper @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
-
-    // ── Channel Setup ──────────────────────────────────────────────────────
 
     fun createNotificationChannels() {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -56,15 +49,6 @@ class AlertNotificationHelper @Inject constructor(
         Timber.d("Notification channels created")
     }
 
-    // ── Show Notification ──────────────────────────────────────────────────
-
-    /**
-     * Shows a notification summarising [newViolationCount] new violations.
-     *
-     * @param newViolationCount  Number of newly detected violations.
-     * @param policyName         Name of the first violation's policy (used as subtitle).
-     * @param isCritical         Whether to use the high-importance critical channel.
-     */
     fun showAlertNotification(
         newViolationCount: Int,
         policyName: String?,
@@ -78,7 +62,9 @@ class AlertNotificationHelper @Inject constructor(
         val channelId = if (isCritical) CHANNEL_CRITICAL else CHANNEL_WARNING
 
         val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(Screen.EXTRA_DESTINATION, Screen.DEST_ALERTS)
+            data = Uri.parse("monitoring://alerts")
         }
         val pendingIntent = PendingIntent.getActivity(
             context,
@@ -111,10 +97,7 @@ class AlertNotificationHelper @Inject constructor(
         Timber.d("Alert notification shown: $title")
     }
 
-    // ── Helpers ────────────────────────────────────────────────────────────
-
     private fun hasNotificationPermission(): Boolean {
-        // POST_NOTIFICATIONS is only required from Android 13 (API 33)
         return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.checkSelfPermission(
                 context,
@@ -127,8 +110,8 @@ class AlertNotificationHelper @Inject constructor(
 
     companion object {
         const val CHANNEL_CRITICAL = "alert_violations_critical"
-        const val CHANNEL_WARNING  = "alert_violations_warning"
-        private const val NOTIFICATION_ID      = 1001
+        const val CHANNEL_WARNING = "alert_violations_warning"
+        private const val NOTIFICATION_ID = 1001
         private const val REQUEST_CODE_OPEN_APP = 0
     }
 }

@@ -105,6 +105,8 @@ class NewRelicRepositoryImpl @Inject constructor(
     override suspend fun getAlertViolations(
         onlyOpen: Boolean?,
     ): NetworkResult<List<AlertViolationDto>> = withContext(ioDispatcher) {
+        // History upsert / resolve is owned by SyncAlertSnapshotUseCase.
+        // Repository only fetches and falls back to Room on network failure.
         alertDao.deleteOlderThan(System.currentTimeMillis() - cacheTtlMs)
 
         val networkResult = safeApiCall {
@@ -112,14 +114,9 @@ class NewRelicRepositoryImpl @Inject constructor(
         }.map { it.violations }
 
         when (networkResult) {
-            is NetworkResult.Success -> {
-                val entities = networkResult.data.map { it.toEntity() }
-                alertDao.deleteAll()
-                alertDao.insertAll(entities)
-                networkResult
-            }
+            is NetworkResult.Success -> networkResult
             is NetworkResult.Error -> {
-                val cached = alertDao.getAll()
+                val cached = if (onlyOpen == true) alertDao.getOpen() else alertDao.getAll()
                 if (cached.isNotEmpty()) {
                     Timber.w("New Relic network error, serving ${cached.size} cached violations")
                     NetworkResult.Success(cached.map { it.toDto() })
@@ -153,16 +150,21 @@ class NewRelicRepositoryImpl @Inject constructor(
         id = id,
         label = label,
         policyName = policyName,
+        conditionName = conditionName,
         openedAt = openedAt,
         severity = priority,
+        isOpen = closedAt == null,
+        resolvedAt = closedAt,
     )
 
     private fun AlertViolationEntity.toDto() = AlertViolationDto(
         id = id,
         label = label,
         policyName = policyName,
+        conditionName = conditionName,
         openedAt = openedAt,
         priority = severity,
+        closedAt = resolvedAt,
     )
 
     // ── Internal helper ─────────────────────────────────────────────────
