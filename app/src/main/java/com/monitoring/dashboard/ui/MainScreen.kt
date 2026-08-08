@@ -13,6 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -20,6 +21,7 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.monitoring.dashboard.R
 import com.monitoring.dashboard.data.local.SecurePreferencesManager
 import com.monitoring.dashboard.ui.navigation.AppNavGraph
 import com.monitoring.dashboard.ui.navigation.Screen
@@ -32,16 +34,19 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val securePreferencesManager: SecurePreferencesManager,
+    private val appLockController: AppLockController,
 ) : ViewModel() {
     private val _needsOnboarding = MutableStateFlow(!securePreferencesManager.isOnboardingComplete())
     val needsOnboarding: StateFlow<Boolean> = _needsOnboarding.asStateFlow()
 
-    private val _needsLock = MutableStateFlow(securePreferencesManager.isAppLockEnabled())
-    val needsLock: StateFlow<Boolean> = _needsLock.asStateFlow()
+    val isLocked: StateFlow<Boolean> = appLockController.isLocked
 
     fun refreshGates() {
         _needsOnboarding.value = !securePreferencesManager.isOnboardingComplete()
-        _needsLock.value = securePreferencesManager.isAppLockEnabled()
+    }
+
+    fun unlock() {
+        appLockController.unlock()
     }
 }
 
@@ -54,18 +59,30 @@ fun MainScreen(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val needsOnboarding by viewModel.needsOnboarding.collectAsStateWithLifecycle()
-    val needsLock by viewModel.needsLock.collectAsStateWithLifecycle()
+    val isLocked by viewModel.isLocked.collectAsStateWithLifecycle()
 
     val startDestination = when {
         needsOnboarding -> Screen.Onboarding.route
-        needsLock -> Screen.Lock.route
+        isLocked -> Screen.Lock.route
         deepLinkDestination == Screen.DEST_ALERTS -> Screen.Alerts.route
         else -> Screen.Home.route
     }
 
     var handledDeepLink by remember { mutableStateOf(false) }
-    LaunchedEffect(deepLinkDestination, needsOnboarding, needsLock) {
-        if (!needsOnboarding && !needsLock && deepLinkDestination == Screen.DEST_ALERTS && !handledDeepLink) {
+
+    LaunchedEffect(isLocked) {
+        if (isLocked && !needsOnboarding) {
+            val current = navController.currentDestination?.route
+            if (current != Screen.Lock.route) {
+                navController.navigate(Screen.Lock.route) {
+                    launchSingleTop = true
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(deepLinkDestination, needsOnboarding, isLocked) {
+        if (!needsOnboarding && !isLocked && deepLinkDestination == Screen.DEST_ALERTS && !handledDeepLink) {
             handledDeepLink = true
             navController.navigate(Screen.Alerts.route) {
                 launchSingleTop = true
@@ -84,12 +101,13 @@ fun MainScreen(
                         val selected = currentDestination
                             ?.hierarchy
                             ?.any { it.route == screen.route } == true
+                        val label = stringResource(screen.titleRes ?: R.string.nav_dashboard)
 
                         NavigationBarItem(
                             icon = {
-                                screen.icon?.let { Icon(it, contentDescription = screen.title) }
+                                screen.icon?.let { Icon(it, contentDescription = label) }
                             },
-                            label = { Text(screen.title) },
+                            label = { Text(label) },
                             selected = selected,
                             onClick = {
                                 navController.navigate(screen.route) {
@@ -109,6 +127,7 @@ fun MainScreen(
         AppNavGraph(
             navController = navController,
             startDestination = startDestination,
+            onUnlocked = viewModel::unlock,
             modifier = Modifier.padding(innerPadding),
         )
     }
