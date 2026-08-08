@@ -6,30 +6,29 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import androidx.work.WorkManager
 import com.monitoring.dashboard.crash.CrashReporting
+import com.monitoring.dashboard.data.local.UserPreferencesRepository
 import com.monitoring.dashboard.notification.AlertNotificationHelper
+import com.monitoring.dashboard.ui.AppLockController
 import com.monitoring.dashboard.worker.AlertMonitorWorker
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
-/**
- * Application class.
- *
- * Implements [Configuration.Provider] so WorkManager uses [HiltWorkerFactory]
- * to inject dependencies into [@HiltWorker][androidx.hilt.work.HiltWorker] classes.
- *
- * On startup:
- *  1. Plants Timber — DebugTree in debug builds, ProductionTree (W/E only) in release.
- *  2. Creates notification channels (idempotent – safe to call every launch).
- *  3. Schedules the periodic [AlertMonitorWorker] (also idempotent).
- */
 @HiltAndroidApp
 class MonitoringApp : Application(), Configuration.Provider {
 
     @Inject lateinit var workerFactory: HiltWorkerFactory
     @Inject lateinit var notificationHelper: AlertNotificationHelper
+    @Inject lateinit var userPreferencesRepository: UserPreferencesRepository
+    @Inject lateinit var appLockController: AppLockController
 
-    // WorkManager configuration – must be provided before WorkManager is used
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
@@ -46,28 +45,26 @@ class MonitoringApp : Application(), Configuration.Provider {
             Timber.plant(ProductionTree())
         }
 
-        // Set up notification channels (no-op if already created)
         notificationHelper.createNotificationChannels()
+        appLockController.start()
 
-        // Schedule background alert monitoring (keeps existing schedule if already queued)
+        // Schedule with preferred poll interval (default 15 until DataStore emits)
         AlertMonitorWorker.schedule(WorkManager.getInstance(applicationContext))
+        appScope.launch {
+            val minutes = userPreferencesRepository.notificationPreferences.first().pollIntervalMinutes
+            AlertMonitorWorker.schedule(
+                WorkManager.getInstance(applicationContext),
+                minutes.toLong(),
+            )
+        }
     }
 
-    /**
-     * Timber tree for production builds.
-     *
-     * - Logs only WARN and ERROR priority messages.
-     * - Strips any message that may contain credentials or tokens (basic guard).
-     * - In a real project, replace the body with your crash-reporting SDK
-     *   (e.g. Firebase Crashlytics: FirebaseCrashlytics.getInstance().recordException(t)).
-     */
     private class ProductionTree : Timber.Tree() {
         override fun isLoggable(tag: String?, priority: Int): Boolean =
             priority >= Log.WARN
 
         override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
             if (!isLoggable(tag, priority)) return
-            // Sanitize: strip potential API key / token patterns before logging
             val sanitized = message
                 .replace(Regex("Bearer [A-Za-z0-9\\-._~+/]+=*"), "Bearer [REDACTED]")
                 .replace(Regex("Api-Key: [A-Za-z0-9\\-]+"), "Api-Key: [REDACTED]")
@@ -77,4 +74,3 @@ class MonitoringApp : Application(), Configuration.Provider {
         }
     }
 }
-

@@ -61,6 +61,11 @@ class AlertMonitorWorker @AssistedInject constructor(
     companion object {
         const val WORK_NAME = "alert_monitor_periodic_work"
         private const val REPEAT_INTERVAL_MINUTES = 15L
+        const val MIN_INTERVAL_MINUTES = 15L
+
+        /** WorkManager periodic minimum is 15 minutes. */
+        fun normalizeIntervalMinutes(intervalMinutes: Long): Long =
+            intervalMinutes.coerceAtLeast(MIN_INTERVAL_MINUTES)
 
         fun schedule(workManager: WorkManager, intervalMinutes: Long = REPEAT_INTERVAL_MINUTES) {
             val constraints = Constraints.Builder()
@@ -68,7 +73,7 @@ class AlertMonitorWorker @AssistedInject constructor(
                 .build()
 
             val request = PeriodicWorkRequestBuilder<AlertMonitorWorker>(
-                intervalMinutes.coerceAtLeast(15L),
+                normalizeIntervalMinutes(intervalMinutes),
                 TimeUnit.MINUTES,
             )
                 .setConstraints(constraints)
