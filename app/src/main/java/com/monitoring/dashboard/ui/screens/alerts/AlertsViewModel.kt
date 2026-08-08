@@ -2,6 +2,7 @@ package com.monitoring.dashboard.ui.screens.alerts
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.monitoring.dashboard.data.DataRefreshBus
 import com.monitoring.dashboard.data.local.UserPreferencesRepository
 import com.monitoring.dashboard.data.remote.util.NetworkResult
 import com.monitoring.dashboard.domain.model.AlertViolation
@@ -28,6 +29,7 @@ class AlertsViewModel @Inject constructor(
     private val getOpenViolationsUseCase: GetOpenViolationsUseCase,
     private val syncAlertSnapshotUseCase: SyncAlertSnapshotUseCase,
     private val userPreferencesRepository: UserPreferencesRepository,
+    private val dataRefreshBus: DataRefreshBus,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AlertsUiState())
@@ -45,6 +47,9 @@ class AlertsViewModel @Inject constructor(
                     )
                 }
             }
+        }
+        viewModelScope.launch {
+            dataRefreshBus.events.collect { refresh() }
         }
         refresh()
     }

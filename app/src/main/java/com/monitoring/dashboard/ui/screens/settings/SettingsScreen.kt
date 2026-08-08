@@ -16,8 +16,10 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -37,6 +39,18 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        uiState.profileSwitchMessage?.let { message ->
+            Snackbar(
+                modifier = Modifier.padding(8.dp),
+                action = {
+                    TextButton(onClick = viewModel::clearProfileSwitchMessage) {
+                        Text(stringResource(R.string.action_hide))
+                    }
+                },
+            ) { Text(message) }
+        }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -190,6 +204,21 @@ fun SettingsScreen(
             )
         }
         item {
+            Text(
+                text = stringResource(R.string.settings_poll_interval),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(15, 30, 60).forEach { minutes ->
+                    FilterChip(
+                        selected = uiState.notificationPreferences.pollIntervalMinutes == minutes,
+                        onClick = { viewModel.setPollIntervalMinutes(minutes) },
+                        label = { Text(stringResource(R.string.settings_poll_minutes, minutes)) },
+                    )
+                }
+            }
+        }
+        item {
             PreferenceSwitch(
                 title = stringResource(R.string.settings_app_lock),
                 checked = uiState.appLockEnabled,
@@ -312,6 +341,7 @@ fun SettingsScreen(
             )
         }
     }
+    } // Column
 }
 
 @Composable

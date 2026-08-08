@@ -1,7 +1,11 @@
 package com.monitoring.dashboard.ui.screens.settings
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.WorkManager
+import com.monitoring.dashboard.data.DataRefreshBus
+import com.monitoring.dashboard.data.local.CacheInvalidator
 import com.monitoring.dashboard.data.local.MetricThresholds
 import com.monitoring.dashboard.data.local.NotificationPreferences
 import com.monitoring.dashboard.data.local.SecurePreferencesManager
@@ -9,7 +13,10 @@ import com.monitoring.dashboard.data.local.UserPreferencesRepository
 import com.monitoring.dashboard.data.remote.util.NetworkResult
 import com.monitoring.dashboard.domain.usecase.CheckGrafanaHealthUseCase
 import com.monitoring.dashboard.domain.usecase.TestNewRelicConnectionUseCase
+import com.monitoring.dashboard.ui.AppLockController
+import com.monitoring.dashboard.worker.AlertMonitorWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -37,14 +44,19 @@ data class SettingsUiState(
     val appLockEnabled: Boolean = false,
     val notificationPreferences: NotificationPreferences = NotificationPreferences(),
     val metricThresholds: MetricThresholds = MetricThresholds(),
+    val profileSwitchMessage: String? = null,
 )
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val securePreferencesManager: SecurePreferencesManager,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val checkGrafanaHealthUseCase: CheckGrafanaHealthUseCase,
     private val testNewRelicConnectionUseCase: TestNewRelicConnectionUseCase,
+    private val cacheInvalidator: CacheInvalidator,
+    private val dataRefreshBus: DataRefreshBus,
+    private val appLockController: AppLockController,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -117,6 +129,7 @@ class SettingsViewModel @Inject constructor(
 
     fun setAppLockEnabled(enabled: Boolean) {
         securePreferencesManager.setAppLockEnabled(enabled)
+        appLockController.onAppLockSettingChanged(enabled)
         _uiState.update { it.copy(appLockEnabled = enabled) }
     }
 
@@ -131,17 +144,38 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun setPollIntervalMinutes(minutes: Int) {
+        viewModelScope.launch {
+            userPreferencesRepository.setPollIntervalMinutes(minutes)
+            AlertMonitorWorker.schedule(
+                WorkManager.getInstance(context),
+                minutes.toLong(),
+            )
+        }
+    }
+
     fun updateThresholds(thresholds: MetricThresholds) {
         viewModelScope.launch { userPreferencesRepository.updateThresholds(thresholds) }
     }
 
+    fun clearProfileSwitchMessage() {
+        _uiState.update { it.copy(profileSwitchMessage = null) }
+    }
+
     fun switchProfile(profileId: String) {
-        // Snapshot current into active profile, then load target
-        securePreferencesManager.snapshotActiveIntoProfile(securePreferencesManager.getActiveProfileId())
-        val ids = securePreferencesManager.getProfileIds().toMutableSet().apply { add(profileId) }
-        securePreferencesManager.saveProfileIds(ids)
-        securePreferencesManager.loadProfileIntoActive(profileId)
-        loadCurrentSettings()
+        if (profileId == securePreferencesManager.getActiveProfileId()) return
+        viewModelScope.launch {
+            securePreferencesManager.snapshotActiveIntoProfile(securePreferencesManager.getActiveProfileId())
+            val ids = securePreferencesManager.getProfileIds().toMutableSet().apply { add(profileId) }
+            securePreferencesManager.saveProfileIds(ids)
+            securePreferencesManager.loadProfileIntoActive(profileId)
+            cacheInvalidator.clearAll()
+            dataRefreshBus.requestRefresh()
+            loadCurrentSettings()
+            _uiState.update {
+                it.copy(profileSwitchMessage = "Switched to $profileId — cache cleared")
+            }
+        }
     }
 
     fun saveCurrentAsProfile(profileId: String) {
