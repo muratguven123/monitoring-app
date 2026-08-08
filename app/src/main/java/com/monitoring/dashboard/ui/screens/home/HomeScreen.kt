@@ -127,6 +127,16 @@ fun HomeScreen(
             }
         }
 
+        if (uiState.isShowingCachedData) {
+            item {
+                Text(
+                    text = stringResource(R.string.home_cached_banner),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = StatusWarning,
+                )
+            }
+        }
+
         // ── Alert Violations Banner ─────────────────────────────────
         if (uiState.openViolations.isNotEmpty()) {
             item {
@@ -187,16 +197,14 @@ fun HomeScreen(
                 ServiceStatusCard(
                     serviceName = stringResource(R.string.nav_grafana),
                     serviceType = stringResource(R.string.service_type_dashboards_metrics),
-                    health = if (uiState.grafanaHealth != null) {
-                        if (uiState.grafanaHealth?.database == "ok") ServiceHealth.HEALTHY
-                        else ServiceHealth.WARNING
-                    } else if (uiState.grafanaHealthError != null) {
-                        ServiceHealth.CRITICAL
-                    } else {
-                        ServiceHealth.UNKNOWN
+                    health = when {
+                        uiState.grafanaHealth?.isHealthy == true -> ServiceHealth.HEALTHY
+                        uiState.grafanaHealth != null -> ServiceHealth.WARNING
+                        uiState.grafanaHealthError != null -> ServiceHealth.CRITICAL
+                        else -> ServiceHealth.UNKNOWN
                     },
                     statusText = when {
-                        uiState.grafanaHealth?.database == "ok" -> stringResource(R.string.status_connected)
+                        uiState.grafanaHealth?.isHealthy == true -> stringResource(R.string.status_connected)
                         uiState.grafanaHealthError != null -> stringResource(R.string.status_disconnected)
                         else -> stringResource(R.string.status_unknown)
                     },

@@ -8,9 +8,6 @@
     <string name="screen_newrelic_apps_title">New Relic Applications</string>
     <string name="screen_newrelic_app_detail_title">Application</string>
     <string name="screen_grafana_detail_title">Dashboard</string>
-    <string name="screen_demo_title">Monitoring Dashboard</string>
-    <string name="screen_demo_subtitle">Live system overview</string>
-    <string name="screen_demo_badge">DEMO</string>
 
     <!-- ── Navigation Labels ─────────────────────────────────────────── -->
     <string name="nav_dashboard">Dashboard</string>
@@ -55,7 +52,6 @@
     <string name="error_load_application">Failed to load application</string>
 
     <!-- ── Home Screen ───────────────────────────────────────────────── -->
-    <string name="home_demo_banner">Demo Preview — Team Leader Sunumu</string>
     <string name="home_open_violations">%d Open Alert Violations</string>
     <string name="home_service_status">Service Status</string>
     <string name="home_grafana_dashboards">Grafana Dashboards</string>
@@ -185,7 +181,15 @@
     <string name="settings_notifications_section">Notification preferences</string>
     <string name="settings_critical_only">Critical alerts only</string>
     <string name="settings_quiet_hours">Quiet hours (22:00–07:00)</string>
+    <string name="settings_poll_interval">Alert poll interval</string>
+    <string name="settings_poll_minutes">%d min</string>
     <string name="settings_app_lock">Biometric / PIN app lock</string>
+    <string name="home_cached_banner">Showing cached data — connection issue</string>
+    <string name="nrql_missing_account">New Relic Account ID is required for NRQL. Add it in Settings.</string>
+    <string name="github_missing_config">Add a GitHub token and owner/repo in Settings to load workflow runs.</string>
+    <string name="action_open_settings">Open Settings</string>
+    <string name="widget_health_summary">%1$d healthy · %2$d warning · %3$d critical</string>
+    <string name="widget_last_sync">Last sync: %s</string>
     <string name="settings_thresholds_section">Metric thresholds</string>
     <string name="settings_thresholds_hint">Values used for green/yellow/red coloring on New Relic metrics.</string>
     <string name="error_settings_save">Settings could not be saved. Please try again.</string>
