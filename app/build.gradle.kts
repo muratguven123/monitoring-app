@@ -160,6 +160,14 @@ dependencies {
     // DataStore (User Preferences — Theme, Refresh Interval)
     implementation(libs.datastore.preferences)
 
+    // Biometric lock + FragmentActivity host
+    implementation(libs.biometric)
+    implementation(libs.fragment.ktx)
+
+    // Home screen widget
+    implementation(libs.glance.appwidget)
+    implementation(libs.glance.material3)
+
     // Charts (Vico — Compose Native Dashboard Charts)
     implementation(libs.bundles.vico)
 

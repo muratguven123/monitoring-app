@@ -2,10 +2,13 @@ package com.monitoring.dashboard.di
 
 import com.monitoring.dashboard.BuildConfig
 import com.monitoring.dashboard.data.local.SecurePreferencesManager
+import com.monitoring.dashboard.data.remote.GitHubApiService
 import com.monitoring.dashboard.data.remote.GrafanaApiService
+import com.monitoring.dashboard.data.remote.NerdGraphApiService
 import com.monitoring.dashboard.data.remote.NewRelicApiService
 import com.monitoring.dashboard.data.remote.interceptor.AuthInterceptor
 import com.monitoring.dashboard.data.remote.interceptor.DynamicBaseUrlInterceptor
+import com.monitoring.dashboard.data.remote.interceptor.GitHubAuthInterceptor
 import com.monitoring.dashboard.data.remote.interceptor.NewRelicAuthInterceptor
 import com.monitoring.dashboard.data.local.dao.AlertDao
 import com.monitoring.dashboard.data.local.dao.GrafanaDao
@@ -47,6 +50,14 @@ annotation class NewRelicClient
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class IoDispatcher
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class NerdGraphClient
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class GitHubClient
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -186,6 +197,78 @@ object NetworkModule {
         @Named("cacheTtlMs") cacheTtlMs: Long,
     ): NewRelicRepository =
         NewRelicRepositoryImpl(apiService, newRelicDao, alertDao, ioDispatcher, cacheTtlMs)
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ██  NERDGRAPH / GITHUB  ██████████████████████████████████████████████
+    // ══════════════════════════════════════════════════════════════════════
+
+    @Provides
+    @Singleton
+    @NerdGraphClient
+    fun provideNerdGraphOkHttpClient(
+        newRelicAuthInterceptor: NewRelicAuthInterceptor,
+        loggingInterceptor: HttpLoggingInterceptor,
+    ): OkHttpClient =
+        OkHttpClient.Builder()
+            .addInterceptor(newRelicAuthInterceptor)
+            .addInterceptor(loggingInterceptor)
+            .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .build()
+
+    @Provides
+    @Singleton
+    @NerdGraphClient
+    fun provideNerdGraphRetrofit(
+        @NerdGraphClient okHttpClient: OkHttpClient,
+    ): Retrofit {
+        val url = BuildConfig.NEWRELIC_NERDGRAPH_URL
+            .removeSuffix("/graphql")
+            .ensureTrailingSlash()
+        return Retrofit.Builder()
+            .baseUrl(url)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideNerdGraphApiService(
+        @NerdGraphClient retrofit: Retrofit,
+    ): NerdGraphApiService = retrofit.create(NerdGraphApiService::class.java)
+
+    @Provides
+    @Singleton
+    @GitHubClient
+    fun provideGitHubOkHttpClient(
+        gitHubAuthInterceptor: GitHubAuthInterceptor,
+        loggingInterceptor: HttpLoggingInterceptor,
+    ): OkHttpClient =
+        OkHttpClient.Builder()
+            .addInterceptor(gitHubAuthInterceptor)
+            .addInterceptor(loggingInterceptor)
+            .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .build()
+
+    @Provides
+    @Singleton
+    @GitHubClient
+    fun provideGitHubRetrofit(
+        @GitHubClient okHttpClient: OkHttpClient,
+    ): Retrofit =
+        Retrofit.Builder()
+            .baseUrl(BuildConfig.GITHUB_BASE_URL.ensureTrailingSlash())
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+
+    @Provides
+    @Singleton
+    fun provideGitHubApiService(
+        @GitHubClient retrofit: Retrofit,
+    ): GitHubApiService = retrofit.create(GitHubApiService::class.java)
 
     // ── Grafana Image Loader (Coil) ───────────────────────────────────────
     //
