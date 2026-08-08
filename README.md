@@ -98,20 +98,45 @@ API key bilgileri cihazda `EncryptedSharedPreferences` ile güvenli şekilde sak
 
 Uygulama, Room veritabanı ile offline destek sunar. Grafana dashboard listesi, New Relic uygulama bilgileri ve alert violation verileri her başarılı API çağrısından sonra önbelleğe alınır (cache TTL: 5 dakika). Ağ hatasında cache’den dönülür; Home’da “Showing cached data” bandı görünür. Ortam profili değişince Room cache temizlenir. `AlertMonitorWorker` ihlal karşılaştırmasını Room üzerinden yapar (dedup + geçmiş).
 
-## Crash reporting
+## Production (iç kullanım)
 
-`CrashReporting` ince bir facade’dır (`app/.../crash/CrashReporting.kt`). Production’da Firebase Crashlytics veya Sentry bağlamak için:
+Bu uygulama **Google Play dışı / sideload** iç dağıtım için sertleştirilmiştir.
 
-1. İlgili SDK bağımlılığını ekleyin ve `Application.onCreate` içinde SDK’yı init edin.
-2. `CrashReporting.install(object : CrashReporting.Sink { ... })` ile `log` / `record` çağrılarını SDK’ya iletin.
-3. Call site’ları değiştirmeyin — uygulama zaten `CrashReporting.log` / `record` kullanır.
+### Firebase Crashlytics
 
-Varsayılan sink no-op’tur; debug’da `TimberBreadcrumbSink` kullanılabilir.
+1. [Firebase Console](https://console.firebase.google.com/) → Android app ekleyin (`applicationId`: `com.monitoring.dashboard`).
+2. İndirilen `google-services.json` dosyasını `app/google-services.json` olarak koyun (git’e commit edilmez).
+3. Debug build’lerde Crashlytics collection kapalıdır; release’te `CrashReporting.CrashlyticsSink` aktiftir.
+4. Yerel/CI’da dosya yoksa otomatik olarak `app/ci/google-services.json` placeholder kopyalanır (gerçek raporlama için gerçek Firebase dosyası gerekir).
+5. Şablon: `app/google-services.json.example`.
+
+### Release APK (iç dağıtım)
+
+1. Keystore oluşturun ve `keystore.properties.example` → `keystore.properties` kopyalayın (veya `KEYSTORE_*` env).
+2. `./gradlew assembleRelease`
+3. APK: `app/build/outputs/apk/release/`
+4. `versionCode` / `versionName` değerlerini [`app/build.gradle.kts`](app/build.gradle.kts) içinde her iç sürümde manuel artırın.
+
+### Release smoke checklist
+
+1. Cold start → onboarding / credentials  
+2. Home + Alerts  
+3. Settings: ortam profili değiştir (cache clear snackbar)  
+4. Poll aralığı 30 dk  
+5. App lock: arka plana al → dön → biometric/PIN  
+6. Widget özeti (alert + health)  
+7. Firebase Console’da bir non-fatal / test crash görünür mü (gerçek `google-services.json` ile)
+
+### Güvenlik notları
+
+- API key’ler EncryptedSharedPreferences; encryption açılamazsa **plaintext disk fallback yok** (in-memory + yeniden giriş).
+- Release’te cleartext HTTP kapalı; emulator HTTP yalnızca debug.
+- Loglar sanitize edilir (`Bearer`, `NRAK-`, `ghp_`, …).
 
 ## Gelecek (bilinçli olarak dışarıda)
 
 - PromQL editörü, NerdGraph alert acknowledge/close, ekran görüntüsü paylaşımı
-- Crashlytics/Sentry SDK ekleme (facade hazır; hesap/bağımlılık gerektirir)
+- Google Play Data Safety / store listing (kapsam: iç kullanım)
 
 ## Mimari (Özet)
 

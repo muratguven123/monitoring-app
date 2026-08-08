@@ -131,7 +131,7 @@ Bu desen sayesinde uygulama, internet olmadan bile son verileri gösterebilir.
 
 ### 4.9 `di`
 - **NetworkModule** — OkHttp, Retrofit, Repository provider'ları.
-- **DatabaseModule** — Room DB, DAO'lar, cache TTL sabiti.
+- **DatabaseModule** — Room DB, DAO'lar, `MIGRATION_1_2`, cache TTL sabiti (destructive migration yok).
 - **WorkManagerModule** — WorkManager + HiltWorkerFactory.
 
 ---
@@ -152,8 +152,12 @@ Bu desen sayesinde uygulama, internet olmadan bile son verileri gösterebilir.
 | Glance widget (alert + health)       | ✅    |
 | Room offline cache + Home banner     | ✅    |
 | TR / EN i18n                         | ✅    |
-| CrashReporting facade                | ✅    |
-| CI (GitHub Actions)                  | ✅    |
+| CrashReporting + Firebase Crashlytics| ✅    |
+| Fail-closed encrypted prefs          | ✅    |
+| Room Migration 1→2 (no destructive)  | ✅    |
+| CI assembleRelease + mapping         | ✅    |
+| İç kullanım / sideload               | ✅    |
+| Google Play Data Safety              | ❌ kapsam dışı |
 | Demo/sunum modu                      | ❌ kaldırıldı |
 | Material 3 & Dark Mode desteği       | ✅    |
 
@@ -242,9 +246,9 @@ Bu ortamda Grafana `http://localhost:3000`, mock New Relic `http://localhost:500
 - **PromQL editörü** — Panel time-range var; serbest PromQL düzenleyici yok.
 - **NerdGraph acknowledge/close** — Yerel mute yeterli; uzak acknowledge bu sürümde yok.
 - **Screenshot share** — Alerts metin/JSON paylaşımı var; ekran görüntüsü ayrı iş.
-- **Crashlytics / Sentry SDK** — `CrashReporting` facade hazır; SDK bağlama hesap gerektirir.
 - **Webhook / SSE** — WorkManager polling yerine gerçek zamanlı push.
 - **Compose Preview / Screenshot testing** — UI regression testleri.
+- **Google Play** — Kapsam dışı (iç sideload); store listing / Data Safety ayrı proje.
 
 ---
 
