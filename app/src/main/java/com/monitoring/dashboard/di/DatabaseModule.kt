@@ -3,6 +3,7 @@ package com.monitoring.dashboard.di
 import android.content.Context
 import androidx.room.Room
 import com.monitoring.dashboard.data.local.MonitoringDatabase
+import com.monitoring.dashboard.data.local.MonitoringMigrations
 import com.monitoring.dashboard.data.local.dao.AlertDao
 import com.monitoring.dashboard.data.local.dao.GrafanaDao
 import com.monitoring.dashboard.data.local.dao.NewRelicDao
@@ -31,7 +32,7 @@ object DatabaseModule {
             MonitoringDatabase::class.java,
             "monitoring_database",
         )
-            .fallbackToDestructiveMigration()
+            .addMigrations(MonitoringMigrations.MIGRATION_1_2)
             .build()
 
     @Provides

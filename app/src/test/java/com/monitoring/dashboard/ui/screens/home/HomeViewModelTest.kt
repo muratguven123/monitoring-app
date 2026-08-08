@@ -51,6 +51,7 @@ class HomeViewModelTest {
         userPreferencesRepository = mockk(relaxed = true)
         dataRefreshBus = DataRefreshBus()
         every { securePreferencesManager.isAnySourceConfigured() } returns true
+        every { securePreferencesManager.needsCredentialReset() } returns false
         every { userPreferencesRepository.favoriteDashboardUids } returns flowOf(emptySet())
         every { userPreferencesRepository.favoriteAppIds } returns flowOf(emptySet())
     }
