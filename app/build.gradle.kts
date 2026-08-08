@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.hilt)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
     kotlin("kapt")
 }
 
@@ -25,23 +27,27 @@ android {
     }
 
     signingConfigs {
-        // Release signing config – override via environment variables in CI:
-        //   KEYSTORE_PATH, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD
-        // Or create a local keystore.properties file (do NOT commit it to VCS).
+        // Release signing: KEYSTORE_* env vars, or root keystore.properties (see keystore.properties.example).
         create("release") {
-            val keystorePath = System.getenv("KEYSTORE_PATH")
-                ?: project.findProperty("keystorePath") as String?
-            val keystorePassword = System.getenv("KEYSTORE_PASSWORD")
-                ?: project.findProperty("keystorePassword") as String?
-            val keyAlias = System.getenv("KEY_ALIAS")
-                ?: project.findProperty("keyAlias") as String?
-            val keyPassword = System.getenv("KEY_PASSWORD")
-                ?: project.findProperty("keyPassword") as String?
+            val propsFile = rootProject.file("keystore.properties")
+            val props = java.util.Properties()
+            if (propsFile.exists()) {
+                propsFile.inputStream().use { props.load(it) }
+            }
+            fun prop(env: String, key: String): String? =
+                System.getenv(env)?.takeIf { it.isNotBlank() }
+                    ?: props.getProperty(key)?.takeIf { it.isNotBlank() }
+                    ?: (project.findProperty(key) as String?)?.takeIf { it.isNotBlank() }
+
+            val keystorePath = prop("KEYSTORE_PATH", "keystorePath")
+            val keystorePassword = prop("KEYSTORE_PASSWORD", "keystorePassword")
+            val keyAliasValue = prop("KEY_ALIAS", "keyAlias")
+            val keyPassword = prop("KEY_PASSWORD", "keyPassword")
 
             if (keystorePath != null) {
                 storeFile = file(keystorePath)
                 storePassword = keystorePassword
-                this.keyAlias = keyAlias
+                this.keyAlias = keyAliasValue
                 this.keyPassword = keyPassword
             }
         }
@@ -176,6 +182,10 @@ dependencies {
 
     // Timber (Logging)
     implementation(libs.timber)
+
+    // Firebase Crashlytics (BOM)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.crashlytics)
 
     // Accompanist (Pull-to-Refresh, System UI)
     implementation(libs.accompanist.swiperefresh)
