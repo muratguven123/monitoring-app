@@ -23,7 +23,9 @@ yerel önbellek için **Room**, arka plan görevlerinde **WorkManager** kullanı
 | DI                | Hilt (Dagger)                                   |
 | Ağ (Network)      | Retrofit 2 + OkHttp 4 + Moshi                   |
 | Yerel Veritabanı  | Room (SQLite)                                   |
-| Arka Plan Görevi  | WorkManager (15 dk periyodik)                   |
+| Arka Plan Görevi  | WorkManager (ayarlanabilir 15/30/60 dk)         |
+| Tercihler         | DataStore (favoriler, mute, poll, eşikler)      |
+| Widget            | Glance App Widget                               |
 | Güvenli Depolama  | EncryptedSharedPreferences (AndroidX Security)  |
 | Navigasyon        | Navigation Compose                              |
 | Loglama           | Timber                                          |
@@ -93,17 +95,22 @@ Bu desen sayesinde uygulama, internet olmadan bile son verileri gösterebilir.
 - **Model'ler** — `Dashboard`, `DashboardDetail`, `GrafanaHealth` (UI'a dönüştürülmüş domain
   nesneleri).
 - **Use Case'ler** — `GetDashboardsUseCase`, `GetDashboardDetailUseCase`,
-  `CheckGrafanaHealthUseCase`.
+  `CheckGrafanaHealthUseCase`, `GetNewRelicApplicationsUseCase`,
+  `SyncAlertSnapshotUseCase`, `ShouldNotifyViolationUseCase`, bağlantı test use case'leri.
+- Home / Grafana list / NR list ViewModel'leri bu use case'leri tüketir.
 
 ### 4.5 `ui` (Compose Screens)
-- **HomeScreen** — Tüm servislerin özet durumu, açık violation sayısı, auto-refresh countdown.
-- **GrafanaDashboardsScreen** — Dashboard listesi, arama, folder bilgisi.
+- **OnboardingScreen** — İlk kurulum, bağlantı testi, bildirim izni.
+- **HomeScreen** — Özet, watchlist, cache bandı, auto-refresh countdown.
+- **GrafanaDashboardsScreen** — Dashboard listesi, arama, favoriler.
 - **GrafanaDashboardDetailScreen** — Panel listesi (tip ikonu, PromQL sorguları).
 - **NewRelicAppsScreen** — Uygulama listesi, sağlık durumu, arama.
-- **NewRelicAppDetailScreen** — Renk kodlu performans metrikleri (Apdex, response time,
-  error rate, throughput, host/instance sayıları), End User özeti, açık violation'lar.
-- **SettingsScreen** — Grafana ve New Relic API ayarları (URL, API key, Account ID).
-- **AlertsScreen** — Alert inbox, filtreler, mute ve paylaşım.
+- **NewRelicAppDetailScreen** — Renk kodlu performans metrikleri, End User, violation'lar.
+- **NrqlScreen** — Şablonlu NRQL; Account ID yoksa Settings CTA; satır sonuçları.
+- **GithubStatusScreen** — Workflow run'ları; eksik token/repo için Settings CTA.
+- **SettingsScreen** — Credentials, ortam profilleri, poll aralığı, quiet hours, app lock, eşikler.
+- **AlertsScreen** — Alert inbox, filtreler, mute ve metin/JSON paylaşım.
+- **LockScreen** — Biyometrik / PIN; ProcessLifecycle `ON_STOP` ile yeniden kilit.
 
 ### 4.6 `ui/components`
 - **MonitoringCard** — Genel amaçlı kart (ikon, başlık, alt başlık, trailing content).
@@ -117,8 +124,10 @@ Bu desen sayesinde uygulama, internet olmadan bile son verileri gösterebilir.
   bildirim, POST_NOTIFICATIONS izin kontrolü.
 
 ### 4.8 `worker`
-- **AlertMonitorWorker** — 15 dakikada bir New Relic alert violation'ları kontrol eder,
-  Room DB ile dedup yaparak yalnızca yeni ihlaller için bildirim gönderir.
+- **AlertMonitorWorker** — DataStore’daki poll aralığıyla (min 15 dk) New Relic violation
+  kontrolü; Room dedup + quiet hours / critical-only filtreleri.
+- **MonitoringWidget** — Açık alert sayısı, NR health rollup, son sync zamanı.
+- **CacheInvalidator + DataRefreshBus** — Profil değişiminde Room temizliği ve UI refresh.
 
 ### 4.9 `di`
 - **NetworkModule** — OkHttp, Retrofit, Repository provider'ları.
@@ -131,16 +140,20 @@ Bu desen sayesinde uygulama, internet olmadan bile son verileri gösterebilir.
 
 | Özellik                              | Durum |
 |--------------------------------------|-------|
+| Onboarding + test connection         | ✅    |
 | Grafana dashboard listeleme/detay    | ✅    |
 | New Relic uygulama listeleme/detay   | ✅    |
-| Renk kodlu performans metrikleri     | ✅    |
-| Servis sağlık durum kartları         | ✅    |
-| Room offline cache (5 dk TTL)        | ✅    |
-| Arka plan alert kontrolü (WorkManager)| ✅   |
-| Push bildirim (Critical/Warning)     | ✅    |
-| API key güvenli depolama             | ✅    |
-| String externalization (90+ kaynak)  | ✅    |
-| Arama / filtreleme                   | ✅    |
+| Alerts inbox + deep link             | ✅    |
+| NRQL Explorer / GitHub Actions       | ✅    |
+| Ortam profilleri + cache izolasyonu  | ✅    |
+| Watchlist / favoriler                | ✅    |
+| Ayarlanabilir poll + quiet hours     | ✅    |
+| App lock (resume relock)             | ✅    |
+| Glance widget (alert + health)       | ✅    |
+| Room offline cache + Home banner     | ✅    |
+| TR / EN i18n                         | ✅    |
+| CrashReporting facade                | ✅    |
+| CI (GitHub Actions)                  | ✅    |
 | Demo/sunum modu                      | ❌ kaldırıldı |
 | Material 3 & Dark Mode desteği       | ✅    |
 
@@ -226,16 +239,11 @@ Bu ortamda Grafana `http://localhost:3000`, mock New Relic `http://localhost:500
 
 ## 9. Gelecek İyileştirmeler (Future Improvements)
 
-- **Grafik/Chart desteği** — Sparkline veya MPAndroidChart ile metrik trend grafiklerini
-  doğrudan uygulama içinde görselleştirme.
-- **Widget** — Ana ekran widget'ı ile servis durumunu bir bakışta görme.
-- **Webhook / SSE** — WorkManager polling yerine gerçek zamanlı push mekanizması.
-- **Çoklu dil desteği** — Türkçe `strings.xml` eklenmesi (şu an yalnızca İngilizce).
-- **Biometric koruma** — Uygulama girişinde parmak izi/yüz tanıma ile güvenlik.
-- **Pagination** — Büyük dashboard/uygulama listeleri için sayfalama.
-- **NRQL / PromQL sorgu editörü** — Uygulama içinden özel sorgu çalıştırma.
-- **Export / paylaşım** — Metrik raporlarını PDF veya ekran görüntüsü olarak paylaşma.
-- **CI/CD entegrasyonu** — GitHub Actions ile otomatik build, test, lint pipeline.
+- **PromQL editörü** — Panel time-range var; serbest PromQL düzenleyici yok.
+- **NerdGraph acknowledge/close** — Yerel mute yeterli; uzak acknowledge bu sürümde yok.
+- **Screenshot share** — Alerts metin/JSON paylaşımı var; ekran görüntüsü ayrı iş.
+- **Crashlytics / Sentry SDK** — `CrashReporting` facade hazır; SDK bağlama hesap gerektirir.
+- **Webhook / SSE** — WorkManager polling yerine gerçek zamanlı push.
 - **Compose Preview / Screenshot testing** — UI regression testleri.
 
 ---

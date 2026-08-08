@@ -5,11 +5,14 @@ Bu sayede servis durumunu, uygulama performansını ve alarmları telefondan hı
 
 ## Ne İşe Yarar?
 
-- Grafana dashboard ve panel bilgilerini görüntüleme
-- New Relic metriklerini (yanıt süresi, throughput, hata oranı) izleme
-- Tüm servisleri tek ekrandan özet olarak görme
-- API anahtarlarını güvenli şekilde saklama
-- İnternet yokken son verileri önbellekten gösterme
+- İlk açılışta onboarding + bağlantı doğrulama
+- Grafana dashboard / panel ve New Relic APM metriklerini tek uygulamada izleme
+- Alerts inbox, arka plan poll (15/30/60 dk), sessiz saatler ve mute
+- NRQL Explorer, GitHub Actions durumu, Glance widget
+- Ortam profilleri (Default / Staging / Prod) — profil değişince cache temizlenir
+- Offline cache + Home’da “cached data” uyarısı
+- Biyometrik / PIN app lock (arka plana gidince yeniden kilit)
+- TR / EN string kaynakları
 
 ## Kullanılan Teknolojiler (Kısa)
 
@@ -57,9 +60,9 @@ gradlew.bat build
 
 ## İlk Açılışta Yapılacaklar
 
-1. Uygulamada **Settings** ekranına gidin.
-2. Gerekli API key bilgilerini girin.
-3. Gerekirse base URL ayarlarını güncelleyin.
+1. Onboarding akışında Grafana ve/veya New Relic kimlik bilgilerini girin; **Bağlan ve Kaydet** ile doğrulayın.
+2. İsteğe bağlı: New Relic Account ID (NRQL), GitHub token + `owner/repo`, app lock.
+3. Daha sonra **Settings** üzerinden profilleri, poll aralığını ve metrik eşiklerini yönetin.
 
 Base URL alanları `app/build.gradle.kts` dosyasındaki `BuildConfig` alanlarından gelir:
 
@@ -93,7 +96,22 @@ API key bilgileri cihazda `EncryptedSharedPreferences` ile güvenli şekilde sak
 
 ## Offline Support
 
-Uygulama, Room veritabanı ile tam offline destek sunar. Grafana dashboard listesi, New Relic uygulama bilgileri ve alert violation verileri her başarılı API çağrısından sonra yerel veritabanına önbelleğe alınır (cache TTL: 5 dakika). İnternet bağlantısı kesildiğinde veya API çağrısı başarısız olduğunda, uygulama otomatik olarak son önbellekteki verileri gösterir; bu sayede uçak modunda bile son durumu takip edebilirsiniz. `AlertMonitorWorker` arka plan görevinde de ihlal karşılaştırması artık Room üzerinden yapılır, böylece tekrarlı bildirimler engellenir ve geçmiş ihlaller kalıcı olarak saklanır.
+Uygulama, Room veritabanı ile offline destek sunar. Grafana dashboard listesi, New Relic uygulama bilgileri ve alert violation verileri her başarılı API çağrısından sonra önbelleğe alınır (cache TTL: 5 dakika). Ağ hatasında cache’den dönülür; Home’da “Showing cached data” bandı görünür. Ortam profili değişince Room cache temizlenir. `AlertMonitorWorker` ihlal karşılaştırmasını Room üzerinden yapar (dedup + geçmiş).
+
+## Crash reporting
+
+`CrashReporting` ince bir facade’dır (`app/.../crash/CrashReporting.kt`). Production’da Firebase Crashlytics veya Sentry bağlamak için:
+
+1. İlgili SDK bağımlılığını ekleyin ve `Application.onCreate` içinde SDK’yı init edin.
+2. `CrashReporting.install(object : CrashReporting.Sink { ... })` ile `log` / `record` çağrılarını SDK’ya iletin.
+3. Call site’ları değiştirmeyin — uygulama zaten `CrashReporting.log` / `record` kullanır.
+
+Varsayılan sink no-op’tur; debug’da `TimberBreadcrumbSink` kullanılabilir.
+
+## Gelecek (bilinçli olarak dışarıda)
+
+- PromQL editörü, NerdGraph alert acknowledge/close, ekran görüntüsü paylaşımı
+- Crashlytics/Sentry SDK ekleme (facade hazır; hesap/bağımlılık gerektirir)
 
 ## Mimari (Özet)
 

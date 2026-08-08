@@ -3,9 +3,9 @@ package com.monitoring.dashboard.ui.screens.grafana
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.monitoring.dashboard.data.local.UserPreferencesRepository
-import com.monitoring.dashboard.data.remote.dto.DashboardSearchHitDto
 import com.monitoring.dashboard.data.remote.util.NetworkResult
-import com.monitoring.dashboard.data.repository.GrafanaRepository
+import com.monitoring.dashboard.domain.model.Dashboard
+import com.monitoring.dashboard.domain.usecase.GetDashboardsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +16,7 @@ import javax.inject.Inject
 
 data class GrafanaDashboardsUiState(
     val isLoading: Boolean = true,
-    val dashboards: List<DashboardSearchHitDto> = emptyList(),
+    val dashboards: List<Dashboard> = emptyList(),
     val errorMessage: String? = null,
     val searchQuery: String = "",
     val page: Int = 1,
@@ -26,7 +26,7 @@ data class GrafanaDashboardsUiState(
 
 @HiltViewModel
 class GrafanaDashboardsViewModel @Inject constructor(
-    private val grafanaRepository: GrafanaRepository,
+    private val getDashboardsUseCase: GetDashboardsUseCase,
     private val userPreferencesRepository: UserPreferencesRepository,
 ) : ViewModel() {
 
@@ -51,23 +51,19 @@ class GrafanaDashboardsViewModel @Inject constructor(
             )
         }
         viewModelScope.launch {
-            val page = if (reset) 1 else _uiState.value.page
             val query = _uiState.value.searchQuery.ifBlank { null }
             when (
-                val result = grafanaRepository.searchDashboards(
+                val result = getDashboardsUseCase(
                     query = query,
-                    type = "dash-db",
                     limit = PAGE_SIZE,
-                    page = page,
                 )
             ) {
                 is NetworkResult.Success -> _uiState.update {
                     val merged = if (reset) result.data else it.dashboards + result.data
                     it.copy(
                         isLoading = false,
-                        dashboards = merged,
+                        dashboards = merged.distinctBy { d -> d.uid },
                         errorMessage = null,
-                        page = page,
                         canLoadMore = result.data.size >= PAGE_SIZE,
                     )
                 }

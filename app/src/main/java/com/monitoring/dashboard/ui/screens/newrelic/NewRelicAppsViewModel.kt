@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.monitoring.dashboard.data.local.UserPreferencesRepository
 import com.monitoring.dashboard.data.remote.dto.newrelic.NewRelicApplicationDto
 import com.monitoring.dashboard.data.remote.util.NetworkResult
-import com.monitoring.dashboard.data.repository.NewRelicRepository
+import com.monitoring.dashboard.domain.usecase.GetNewRelicApplicationsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +24,7 @@ data class NewRelicAppsUiState(
 
 @HiltViewModel
 class NewRelicAppsViewModel @Inject constructor(
-    private val newRelicRepository: NewRelicRepository,
+    private val getNewRelicApplicationsUseCase: GetNewRelicApplicationsUseCase,
     private val userPreferencesRepository: UserPreferencesRepository,
 ) : ViewModel() {
 
@@ -44,7 +44,7 @@ class NewRelicAppsViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
         viewModelScope.launch {
             val filterName = _uiState.value.searchQuery.ifBlank { null }
-            when (val result = newRelicRepository.getApplications(filterName = filterName)) {
+            when (val result = getNewRelicApplicationsUseCase(filterName = filterName)) {
                 is NetworkResult.Success -> _uiState.update {
                     it.copy(isLoading = false, applications = result.data, errorMessage = null)
                 }
