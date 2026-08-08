@@ -21,8 +21,40 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Ensure google-services.json
+        run: |
+          if [ ! -f app/google-services.json ]; then
+            cp app/ci/google-services.json app/google-services.json
+          fi
+
       - name: Unit tests
         run: ./gradlew testDebugUnitTest --stacktrace
 
       - name: Assemble debug
         run: ./gradlew assembleDebug --stacktrace
+
+      - name: Create ephemeral CI release keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore "$RUNNER_TEMP/ci-release.jks" \
+            -storepass cipassword \
+            -alias cikey \
+            -keypass cipassword \
+            -keyalg RSA -keysize 2048 -validity 1 \
+            -dname "CN=CI, OU=Monitoring, O=Internal, L=City, ST=ST, C=US"
+
+      - name: Assemble release (R8 / minify smoke)
+        env:
+          KEYSTORE_PATH: ${{ runner.temp }}/ci-release.jks
+          KEYSTORE_PASSWORD: cipassword
+          KEY_ALIAS: cikey
+          KEY_PASSWORD: cipassword
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Upload release mapping
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mapping-release
+          path: app/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: ignore
