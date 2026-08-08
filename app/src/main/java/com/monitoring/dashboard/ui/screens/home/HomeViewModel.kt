@@ -30,6 +30,7 @@ import javax.inject.Inject
 data class HomeUiState(
     val isLoading: Boolean = true,
     val isConfigured: Boolean = true,
+    val needsCredentialReset: Boolean = false,
     val isShowingCachedData: Boolean = false,
     val grafanaHealth: GrafanaHealth? = null,
     val grafanaHealthError: String? = null,
@@ -54,7 +55,11 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
-        HomeUiState(isConfigured = securePreferencesManager.isAnySourceConfigured()),
+        HomeUiState(
+            isConfigured = securePreferencesManager.isAnySourceConfigured() &&
+                !securePreferencesManager.needsCredentialReset(),
+            needsCredentialReset = securePreferencesManager.needsCredentialReset(),
+        ),
     )
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
@@ -98,10 +103,12 @@ class HomeViewModel @Inject constructor(
     }
 
     fun refresh() {
-        val configured = securePreferencesManager.isAnySourceConfigured()
+        val reset = securePreferencesManager.needsCredentialReset()
+        val configured = securePreferencesManager.isAnySourceConfigured() && !reset
         _uiState.update {
             it.copy(
                 isConfigured = configured,
+                needsCredentialReset = reset,
                 isLoading = configured,
                 isShowingCachedData = false,
                 secondsUntilRefresh = AUTO_REFRESH_INTERVAL_SECONDS,

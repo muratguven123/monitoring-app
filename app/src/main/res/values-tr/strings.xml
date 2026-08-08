@@ -73,6 +73,9 @@
     <string name="lock_title">Monitoring Kilidini Aç</string>
     <string name="lock_subtitle">Hassas operasyon verilerini görmek için kimlik doğrulayın.</string>
     <string name="error_settings_save">Ayarlar kaydedilemedi. Lütfen tekrar deneyin.</string>
+    <string name="settings_security_note">API anahtarları cihazda EncryptedSharedPreferences ile saklanır. İç teşhis için Firebase Crashlytics\'e (sanitize edilmiş, API key olmadan) çökme raporları gidebilir.</string>
+    <string name="home_credential_reset_title">Güvenli depolama sıfırlandı</string>
+    <string name="home_credential_reset_body">Şifreli kimlik bilgisi deposu açılamadı. API anahtarlarını Ayarlar\'dan yeniden girin. Anahtarlar asla düz metin saklanmaz.</string>
     <string name="nrql_templates">Şablonlar</string>
     <string name="nrql_query_label">NRQL sorgusu</string>
     <string name="nrql_missing_account">NRQL için New Relic Account ID gerekli. Ayarlardan ekleyin.</string>

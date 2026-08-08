@@ -5,7 +5,9 @@ import android.util.Log
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import androidx.work.WorkManager
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.monitoring.dashboard.crash.CrashReporting
+import com.monitoring.dashboard.crash.LogSanitizer
 import com.monitoring.dashboard.data.local.UserPreferencesRepository
 import com.monitoring.dashboard.notification.AlertNotificationHelper
 import com.monitoring.dashboard.ui.AppLockController
@@ -40,15 +42,16 @@ class MonitoringApp : Application(), Configuration.Provider {
 
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
+            FirebaseCrashlytics.getInstance().isCrashlyticsCollectionEnabled = false
         } else {
-            CrashReporting.install(CrashReporting.TimberBreadcrumbSink())
+            CrashReporting.install(CrashReporting.CrashlyticsSink())
             Timber.plant(ProductionTree())
+            FirebaseCrashlytics.getInstance().isCrashlyticsCollectionEnabled = true
         }
 
         notificationHelper.createNotificationChannels()
         appLockController.start()
 
-        // Schedule with preferred poll interval (default 15 until DataStore emits)
         AlertMonitorWorker.schedule(WorkManager.getInstance(applicationContext))
         appScope.launch {
             val minutes = userPreferencesRepository.notificationPreferences.first().pollIntervalMinutes
@@ -59,15 +62,17 @@ class MonitoringApp : Application(), Configuration.Provider {
         }
     }
 
+    /**
+     * Release logging tree: writes to Logcat and CrashReporting without calling Timber
+     * again (avoids recursion if a Sink used Timber).
+     */
     private class ProductionTree : Timber.Tree() {
         override fun isLoggable(tag: String?, priority: Int): Boolean =
             priority >= Log.WARN
 
         override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
             if (!isLoggable(tag, priority)) return
-            val sanitized = message
-                .replace(Regex("Bearer [A-Za-z0-9\\-._~+/]+=*"), "Bearer [REDACTED]")
-                .replace(Regex("Api-Key: [A-Za-z0-9\\-]+"), "Api-Key: [REDACTED]")
+            val sanitized = LogSanitizer.sanitize(message)
             Log.println(priority, tag ?: "MonitoringApp", sanitized)
             CrashReporting.log(sanitized)
             t?.let { CrashReporting.record(it) }

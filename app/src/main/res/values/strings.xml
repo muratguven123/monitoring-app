@@ -112,7 +112,9 @@
     <string name="settings_newrelic_key_placeholder">User API key (NRAK-…)</string>
     <string name="settings_newrelic_account_label">New Relic Account ID</string>
     <string name="settings_newrelic_account_placeholder">e.g. 1234567</string>
-    <string name="settings_security_note">API keys are stored securely using Android EncryptedSharedPreferences.</string>
+    <string name="settings_security_note">API keys are stored on-device with EncryptedSharedPreferences. Crash reports (sanitized logs, no API keys) may be sent to Firebase Crashlytics for internal diagnostics.</string>
+    <string name="home_credential_reset_title">Secure storage reset</string>
+    <string name="home_credential_reset_body">Encrypted credential storage could not be opened. Re-enter your API keys in Settings. Keys are never stored in plaintext.</string>
 
     <!-- ── Notification Strings ──────────────────────────────────────── -->
     <string name="notification_channel_critical">Critical Alert Violations</string>

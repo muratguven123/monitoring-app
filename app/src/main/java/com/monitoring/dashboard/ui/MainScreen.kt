@@ -36,13 +36,17 @@ class MainViewModel @Inject constructor(
     private val securePreferencesManager: SecurePreferencesManager,
     private val appLockController: AppLockController,
 ) : ViewModel() {
-    private val _needsOnboarding = MutableStateFlow(!securePreferencesManager.isOnboardingComplete())
+    private val _needsOnboarding = MutableStateFlow(
+        !securePreferencesManager.isOnboardingComplete() ||
+            securePreferencesManager.needsCredentialReset(),
+    )
     val needsOnboarding: StateFlow<Boolean> = _needsOnboarding.asStateFlow()
 
     val isLocked: StateFlow<Boolean> = appLockController.isLocked
 
     fun refreshGates() {
-        _needsOnboarding.value = !securePreferencesManager.isOnboardingComplete()
+        _needsOnboarding.value = !securePreferencesManager.isOnboardingComplete() ||
+            securePreferencesManager.needsCredentialReset()
     }
 
     fun unlock() {

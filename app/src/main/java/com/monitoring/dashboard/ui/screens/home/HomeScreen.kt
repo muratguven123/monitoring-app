@@ -64,12 +64,18 @@ fun HomeScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = stringResource(R.string.home_setup_title),
+                text = stringResource(
+                    if (uiState.needsCredentialReset) R.string.home_credential_reset_title
+                    else R.string.home_setup_title,
+                ),
                 style = MaterialTheme.typography.headlineSmall,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = stringResource(R.string.home_setup_body),
+                text = stringResource(
+                    if (uiState.needsCredentialReset) R.string.home_credential_reset_body
+                    else R.string.home_setup_body,
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

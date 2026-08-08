@@ -13,29 +13,38 @@ import javax.inject.Singleton
  * Manages sensitive configuration values (API keys, base URLs) using
  * [EncryptedSharedPreferences] backed by Android Keystore.
  *
- * Robust against Keystore corruption: if the encrypted file cannot be opened
- * (e.g. after a PIN/biometric change, backup-restore, or partial write), the
- * file is deleted and a fresh empty store is created so the app never gets
- * stuck in a crash loop.  The user will simply have to re-enter their settings.
+ * Fail-closed: if encryption cannot be opened after a wipe/retry, an in-memory
+ * store is used so API keys are never written plaintext to disk. The user must
+ * re-enter credentials ([needsCredentialReset]).
  */
 @Singleton
 class SecurePreferencesManager @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
 
+    @Volatile
+    private var credentialResetRequired: Boolean = false
+
+    /** True when encrypted storage could not be opened; credentials must be re-entered. */
+    fun needsCredentialReset(): Boolean = credentialResetRequired
+
     private val prefs: SharedPreferences by lazy {
+        // Remove legacy plaintext fallback file from older builds
+        context.deleteSharedPreferences("${PREFS_FILE_NAME}_fallback")
         try {
             createEncryptedPrefs()
         } catch (firstException: Exception) {
-            // Keystore key gone / file corrupted → wipe and retry
             Timber.w(firstException, "EncryptedSharedPreferences init failed – resetting prefs file")
             context.deleteSharedPreferences(PREFS_FILE_NAME)
             try {
                 createEncryptedPrefs()
             } catch (secondException: Exception) {
-                // Absolute last resort: plain (unencrypted) prefs so the app can at least open
-                Timber.e(secondException, "EncryptedSharedPreferences failed twice – falling back to plain prefs")
-                context.getSharedPreferences("${PREFS_FILE_NAME}_fallback", Context.MODE_PRIVATE)
+                Timber.e(
+                    secondException,
+                    "EncryptedSharedPreferences failed twice – using in-memory store (no plaintext disk fallback)",
+                )
+                credentialResetRequired = true
+                MemorySharedPreferences()
             }
         }
     }
@@ -99,7 +108,8 @@ class SecurePreferencesManager @Inject constructor(
         isGrafanaConfigured() || isNewRelicConfigured()
 
     fun isOnboardingComplete(): Boolean =
-        prefs.getBoolean(KEY_ONBOARDING_COMPLETE, false) || isAnySourceConfigured()
+        !credentialResetRequired &&
+            (prefs.getBoolean(KEY_ONBOARDING_COMPLETE, false) || isAnySourceConfigured())
 
     fun setOnboardingComplete(complete: Boolean) {
         prefs.edit().putBoolean(KEY_ONBOARDING_COMPLETE, complete).apply()
