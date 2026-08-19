@@ -107,15 +107,19 @@ Bu uygulama **Google Play dışı / sideload** iç dağıtım için sertleştiri
 1. [Firebase Console](https://console.firebase.google.com/) → Android app ekleyin (`applicationId`: `com.monitoring.dashboard`).
 2. İndirilen `google-services.json` dosyasını `app/google-services.json` olarak koyun (git’e commit edilmez).
 3. Debug build’lerde Crashlytics collection kapalıdır; release’te `CrashReporting.CrashlyticsSink` aktiftir.
-4. Yerel/CI’da dosya yoksa otomatik olarak `app/ci/google-services.json` placeholder kopyalanır (gerçek raporlama için gerçek Firebase dosyası gerekir).
-5. Şablon: `app/google-services.json.example`.
+4. Placeholder (`app/ci/google-services.json`) **yalnızca CI'da** otomatik kopyalanır. Yerelde dosya yoksa build açıklayıcı bir hatayla durur.
+5. Release build'i `verifyFirebaseConfig` görevi ile korunur: placeholder tespit edilirse build durur, çünkü o APK hiç crash raporu göndermez.
+6. Şablon: `app/google-services.json.example`. Ayrıntı: [`RELEASE_SIGNING.md`](RELEASE_SIGNING.md).
 
 ### Release APK (iç dağıtım)
 
-1. Keystore oluşturun ve `keystore.properties.example` → `keystore.properties` kopyalayın (veya `KEYSTORE_*` env).
+Ayrıntılı kurulum ve secret yönetimi: [`RELEASE_SIGNING.md`](RELEASE_SIGNING.md).
+
+1. Keystore'u repo **dışında** oluşturun; kimlik bilgilerini `~/.gradle/gradle.properties` veya `KEYSTORE_*` env değişkenleriyle verin. `<repo>/keystore.properties` hâlâ okunur ama uyarı basar ve önerilmez.
 2. `./gradlew assembleRelease`
 3. APK: `app/build/outputs/apk/release/`
-4. `versionCode` / `versionName` değerlerini [`app/build.gradle.kts`](app/build.gradle.kts) içinde her iç sürümde manuel artırın.
+4. `versionCode` / `versionName` **elle düzenlenmez** — `VERSION_CODE` / `VERSION_NAME` ortam değişkenlerinden gelir. Yayın için git tag'i atın (`git tag v1.1.0 && git push origin v1.1.0`); `.github/workflows/release.yml` imzalı APK üretir, `mapping.txt`'i Crashlytics'e yükler ve GitHub release'i oluşturur.
+5. Yüklü sürüm uygulama içinde Ayarlar ekranının en altında görünür.
 
 ### Release smoke checklist
 
