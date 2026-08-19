@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "ab1f51170b718f730fe093b8904703ba",
+    "identityHash": "608cdf47fa18a154d93a3d3d4c0415c6",
     "entities": [
       {
         "tableName": "grafana_dashboards",
@@ -105,7 +105,7 @@
       },
       {
         "tableName": "alert_violations",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `label` TEXT, `policyName` TEXT, `openedAt` INTEGER, `severity` TEXT, `cachedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `label` TEXT, `policyName` TEXT, `conditionName` TEXT, `openedAt` INTEGER, `severity` TEXT, `isOpen` INTEGER NOT NULL, `resolvedAt` INTEGER, `cachedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -124,6 +124,11 @@
             "affinity": "TEXT"
           },
           {
+            "fieldPath": "conditionName",
+            "columnName": "conditionName",
+            "affinity": "TEXT"
+          },
+          {
             "fieldPath": "openedAt",
             "columnName": "openedAt",
             "affinity": "INTEGER"
@@ -132,6 +137,17 @@
             "fieldPath": "severity",
             "columnName": "severity",
             "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isOpen",
+            "columnName": "isOpen",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resolvedAt",
+            "columnName": "resolvedAt",
+            "affinity": "INTEGER"
           },
           {
             "fieldPath": "cachedAt",
@@ -150,7 +166,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ab1f51170b718f730fe093b8904703ba')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '608cdf47fa18a154d93a3d3d4c0415c6')"
     ]
   }
 }

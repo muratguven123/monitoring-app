@@ -3,7 +3,6 @@ package com.monitoring.dashboard.di
 import android.content.Context
 import androidx.room.Room
 import com.monitoring.dashboard.data.local.MonitoringDatabase
-import com.monitoring.dashboard.data.local.MonitoringMigrations
 import com.monitoring.dashboard.data.local.dao.AlertDao
 import com.monitoring.dashboard.data.local.dao.GrafanaDao
 import com.monitoring.dashboard.data.local.dao.NewRelicDao
@@ -32,7 +31,12 @@ object DatabaseModule {
             MonitoringDatabase::class.java,
             "monitoring_database",
         )
-            .addMigrations(MonitoringMigrations.MIGRATION_1_2)
+            // No migrations yet — the app ships at schema version 1.
+            //
+            // When the schema changes: bump @Database(version = ...), add the
+            // Migration here, and add a MigrationTestHelper test. Do NOT call
+            // fallbackToDestructiveMigration() — it drops the table on a missing
+            // migration, silently wiping the user's cached alert history.
             .build()
 
     @Provides
