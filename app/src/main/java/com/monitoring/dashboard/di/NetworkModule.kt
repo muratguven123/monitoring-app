@@ -1,22 +1,16 @@
 package com.monitoring.dashboard.di
 
 import com.monitoring.dashboard.BuildConfig
-import com.monitoring.dashboard.data.local.SecurePreferencesManager
 import com.monitoring.dashboard.data.remote.GitHubApiService
 import com.monitoring.dashboard.data.remote.GrafanaApiService
+import com.monitoring.dashboard.data.remote.GrafanaBaseUrlProvider
 import com.monitoring.dashboard.data.remote.NerdGraphApiService
 import com.monitoring.dashboard.data.remote.NewRelicApiService
 import com.monitoring.dashboard.data.remote.interceptor.AuthInterceptor
 import com.monitoring.dashboard.data.remote.interceptor.DynamicBaseUrlInterceptor
 import com.monitoring.dashboard.data.remote.interceptor.GitHubAuthInterceptor
 import com.monitoring.dashboard.data.remote.interceptor.NewRelicAuthInterceptor
-import com.monitoring.dashboard.data.local.dao.AlertDao
-import com.monitoring.dashboard.data.local.dao.GrafanaDao
-import com.monitoring.dashboard.data.local.dao.NewRelicDao
-import com.monitoring.dashboard.data.repository.GrafanaRepository
-import com.monitoring.dashboard.data.repository.GrafanaRepositoryImpl
-import com.monitoring.dashboard.data.repository.NewRelicRepository
-import com.monitoring.dashboard.data.repository.NewRelicRepositoryImpl
+import com.monitoring.dashboard.data.remote.interceptor.NewRelicRegionInterceptor
 import android.content.Context
 import coil.ImageLoader
 import dagger.Module
@@ -26,13 +20,11 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
-import javax.inject.Named
 import javax.inject.Qualifier
 import javax.inject.Singleton
 
@@ -112,25 +104,20 @@ object NetworkModule {
     @GrafanaClient
     fun provideGrafanaRetrofit(
         @GrafanaClient okHttpClient: OkHttpClient,
-        securePreferencesManager: SecurePreferencesManager,
-    ): Retrofit {
-        // Priority: runtime user setting > BuildConfig default > debug fallback (debug only)
-        val baseUrl = securePreferencesManager
-            .getGrafanaBaseUrl()
-            ?.toRetrofitBaseUrlOrNull()
-            ?: BuildConfig.GRAFANA_BASE_URL
-                .takeIf { it.isNotBlank() }
-                ?.toRetrofitBaseUrlOrNull()
-            ?: if (BuildConfig.DEBUG) "http://10.0.2.2:3000/" else "https://localhost/"
-        // In production the user MUST configure the Grafana URL via Settings.
-        // The "https://localhost/" placeholder will simply fail requests until configured.
-
-        return Retrofit.Builder()
-            .baseUrl(baseUrl)
+    ): Retrofit =
+        // Deliberately NOT the configured server address.
+        //
+        // Retrofit is a singleton built once per process, but the user can change
+        // servers in Settings at any time. Baking the address in here would pin
+        // the app to whatever was configured at startup. Instead every request
+        // leaves addressed to the placeholder and DynamicBaseUrlInterceptor
+        // applies the current server — which also gives that interceptor an exact
+        // rule for which requests to rewrite.
+        Retrofit.Builder()
+            .baseUrl(GrafanaBaseUrlProvider.UNCONFIGURED_PLACEHOLDER_URL)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-    }
 
     @Provides
     @Singleton
@@ -138,16 +125,6 @@ object NetworkModule {
         @GrafanaClient retrofit: Retrofit,
     ): GrafanaApiService =
         retrofit.create(GrafanaApiService::class.java)
-
-    @Provides
-    @Singleton
-    fun provideGrafanaRepository(
-        apiService: GrafanaApiService,
-        grafanaDao: GrafanaDao,
-        @IoDispatcher ioDispatcher: CoroutineDispatcher,
-        @Named("cacheTtlMs") cacheTtlMs: Long,
-    ): GrafanaRepository =
-        GrafanaRepositoryImpl(apiService, grafanaDao, ioDispatcher, cacheTtlMs)
 
     // ══════════════════════════════════════════════════════════════════════
     // ██  NEW RELIC  ██████████████████████████████████████████████████████
@@ -157,10 +134,12 @@ object NetworkModule {
     @Singleton
     @NewRelicClient
     fun provideNewRelicOkHttpClient(
+        newRelicRegionInterceptor: NewRelicRegionInterceptor,
         newRelicAuthInterceptor: NewRelicAuthInterceptor,
         loggingInterceptor: HttpLoggingInterceptor,
     ): OkHttpClient =
         OkHttpClient.Builder()
+            .addInterceptor(newRelicRegionInterceptor)
             .addInterceptor(newRelicAuthInterceptor)
             .addInterceptor(loggingInterceptor)
             .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -187,17 +166,6 @@ object NetworkModule {
     ): NewRelicApiService =
         retrofit.create(NewRelicApiService::class.java)
 
-    @Provides
-    @Singleton
-    fun provideNewRelicRepository(
-        apiService: NewRelicApiService,
-        newRelicDao: NewRelicDao,
-        alertDao: AlertDao,
-        @IoDispatcher ioDispatcher: CoroutineDispatcher,
-        @Named("cacheTtlMs") cacheTtlMs: Long,
-    ): NewRelicRepository =
-        NewRelicRepositoryImpl(apiService, newRelicDao, alertDao, ioDispatcher, cacheTtlMs)
-
     // ══════════════════════════════════════════════════════════════════════
     // ██  NERDGRAPH / GITHUB  ██████████████████████████████████████████████
     // ══════════════════════════════════════════════════════════════════════
@@ -206,10 +174,12 @@ object NetworkModule {
     @Singleton
     @NerdGraphClient
     fun provideNerdGraphOkHttpClient(
+        newRelicRegionInterceptor: NewRelicRegionInterceptor,
         newRelicAuthInterceptor: NewRelicAuthInterceptor,
         loggingInterceptor: HttpLoggingInterceptor,
     ): OkHttpClient =
         OkHttpClient.Builder()
+            .addInterceptor(newRelicRegionInterceptor)
             .addInterceptor(newRelicAuthInterceptor)
             .addInterceptor(loggingInterceptor)
             .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -294,24 +264,7 @@ object NetworkModule {
     private fun String.ensureTrailingSlash(): String =
         if (endsWith("/")) this else "$this/"
 
-    /**
-     * Accepts pasted Grafana links and normalizes them to Retrofit-safe origin URL.
-     * Example: https://host/goto/abc?orgId=1  -> https://host/
-     */
-    private fun String.toRetrofitBaseUrlOrNull(): String? {
-        val raw = trim()
-        if (raw.isBlank()) return null
-
-        val withScheme = if (raw.startsWith("http://") || raw.startsWith("https://")) {
-            raw
-        } else {
-            "https://$raw"
-        }
-
-        val parsed = withScheme.toHttpUrlOrNull() ?: return null
-        val defaultPort = (parsed.scheme == "http" && parsed.port == 80) ||
-            (parsed.scheme == "https" && parsed.port == 443)
-        val portPart = if (defaultPort) "" else ":${parsed.port}"
-        return "${parsed.scheme}://${parsed.host}$portPart/"
-    }
+    // Grafana URL parsing/normalisation lives in
+    // com.monitoring.dashboard.domain.model.GrafanaServerUrl so it can be unit
+    // tested and shared with the Settings screen.
 }

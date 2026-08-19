@@ -3,6 +3,7 @@ package com.monitoring.dashboard.data.repository
 import com.monitoring.dashboard.data.local.dao.GrafanaDao
 import com.monitoring.dashboard.data.local.entity.GrafanaDashboardEntity
 import com.monitoring.dashboard.data.remote.GrafanaApiService
+import com.monitoring.dashboard.data.remote.GrafanaNotConfiguredException
 import com.monitoring.dashboard.data.remote.dto.DashboardDetailResponseDto
 import com.monitoring.dashboard.data.remote.dto.DashboardSearchHitDto
 import com.monitoring.dashboard.data.remote.dto.DatasourceDto
@@ -130,7 +131,7 @@ class GrafanaRepositoryImpl @Inject constructor(
         slug = "",
         type = "dash-db",
         tags = if (tags.isBlank()) emptyList() else tags.split(","),
-        isStarred = isStarred,
+        isStarred = false,
         folderTitle = folderTitle,
     )
 
@@ -159,6 +160,15 @@ class GrafanaRepositoryImpl @Inject constructor(
                     message = errorBody ?: response.message(),
                 )
             }
+        } catch (e: GrafanaNotConfiguredException) {
+            // Not an error condition worth reporting — the user simply has not
+            // entered a server address yet. Kept distinct so the UI can prompt
+            // for configuration instead of showing a network failure.
+            Timber.d("Grafana call skipped: no server address configured")
+            NetworkResult.Error(
+                message = "Grafana server address is not configured",
+                exception = e,
+            )
         } catch (e: Exception) {
             Timber.e(e, "Grafana API call failed")
             NetworkResult.Error(
