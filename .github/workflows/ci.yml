@@ -5,9 +5,17 @@ on:
     branches: [main, master, develop]
   pull_request:
 
+env:
+  # settings.gradle.kts only falls back to the placeholder google-services.json
+  # when CI is set. Locally a missing file is a hard error.
+  CI: "true"
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    # A hanging test (an unbounded delay loop under advanceUntilIdle will do it)
+    # otherwise holds a runner until GitHub's 6-hour cap.
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,18 +29,37 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Ensure google-services.json
-        run: |
-          if [ ! -f app/google-services.json ]; then
-            cp app/ci/google-services.json app/google-services.json
-          fi
-
       - name: Unit tests
         run: ./gradlew testDebugUnitTest --stacktrace
+
+      - name: Upload unit test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report
+          path: app/build/reports/tests/testDebugUnitTest
+          if-no-files-found: ignore
+
+      - name: Lint (release)
+        run: ./gradlew lintRelease --stacktrace -PallowPlaceholderFirebase=true
+
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-report
+          path: |
+            app/build/reports/lint-results-release.html
+            app/build/reports/lint-results-release.sarif
+          if-no-files-found: ignore
 
       - name: Assemble debug
         run: ./gradlew assembleDebug --stacktrace
 
+      # Smoke test only: proves R8/ProGuard rules still produce a buildable APK.
+      # Signed with a throwaway key and built against the placeholder Firebase
+      # config, so this artifact is NOT distributable. Real releases go through
+      # release.yml.
       - name: Create ephemeral CI release keystore
         run: |
           keytool -genkeypair -v \
@@ -49,7 +76,7 @@ jobs:
           KEYSTORE_PASSWORD: cipassword
           KEY_ALIAS: cikey
           KEY_PASSWORD: cipassword
-        run: ./gradlew assembleRelease --stacktrace
+        run: ./gradlew assembleRelease --stacktrace -PallowPlaceholderFirebase=true
 
       - name: Upload release mapping
         if: always()
@@ -57,4 +84,47 @@ jobs:
         with:
           name: mapping-release
           path: app/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: ignore
+
+  instrumented-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # Emulator jobs take several minutes. Run them where they protect a shared
+    # branch, not on every commit of a work-in-progress feature branch.
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run instrumented tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          script: ./gradlew connectedDebugAndroidTest --stacktrace
+
+      - name: Upload instrumented test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: instrumented-test-report
+          path: app/build/reports/androidTests/connected
           if-no-files-found: ignore
