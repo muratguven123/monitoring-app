@@ -14,7 +14,19 @@ local.properties
 *.aab
 *.jks
 *.keystore
+release-key.jks
+app/release-key.jks
 google-services.json
 keystore.properties
 !app/ci/google-services.json
 !app/google-services.json.example
+!keystore.properties.example
+
+# Lint baseline is generated per-project and should be committed once created,
+# but the HTML/SARIF reports are build output.
+/app/lint-outputs
+lint-results-*.html
+lint-results-*.sarif
+
+# Kotlin incremental / compiler session files
+.kotlin/

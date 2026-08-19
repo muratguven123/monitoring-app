@@ -123,7 +123,8 @@
 -dontwarn com.google.accompanist.**
 
 # ----- Jetpack Compose -----
--keep class androidx.compose.** { *; }
+# Compose AARs already ship consumer-rules.pro. A blanket -keep class androidx.compose.**
+# { *; } kept ~50k members unshrunk/unobfuscated and ballooned mapping.txt.
 -dontwarn androidx.compose.**
 
 # ----- Navigation -----
@@ -143,8 +144,8 @@
 }
 
 # ----- Firebase Crashlytics -----
+# Firebase/GMS AARs ship consumer-rules.pro; blanket -keep is unnecessary.
 -keep class com.google.firebase.** { *; }
--keep class com.google.android.gms.** { *; }
 -dontwarn com.google.firebase.**
 -dontwarn com.google.android.gms.**
 
