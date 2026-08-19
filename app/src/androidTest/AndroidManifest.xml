@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Instrumentation runs with the minified release app (testBuildType = release).
+     R8 applies release mapping to the test APK; Firebase Sessions then loads kotlin-reflect
+     from the test classpath and crashes with VerifyError before any test runs.
+     Drop Firebase auto-init for instrumented tests — the app-under-test R8 output is
+     what we are validating, not Crashlytics delivery in this task. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application>
+        <provider
+            android:name="com.google.firebase.provider.FirebaseInitProvider"
+            tools:node="remove" />
+    </application>
+</manifest>
