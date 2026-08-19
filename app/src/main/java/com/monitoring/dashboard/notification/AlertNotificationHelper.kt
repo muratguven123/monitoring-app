@@ -93,7 +93,12 @@ class AlertNotificationHelper @Inject constructor(
             .setAutoCancel(true)
             .build()
 
-        NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+        try {
+            NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+        } catch (e: SecurityException) {
+            Timber.w(e, "POST_NOTIFICATIONS revoked before notify – skipping")
+            return
+        }
         Timber.d("Alert notification shown: $title")
     }
 

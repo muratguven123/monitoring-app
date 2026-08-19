@@ -17,11 +17,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.monitoring.dashboard.R
+import com.monitoring.dashboard.data.DataRefreshBus
 import com.monitoring.dashboard.data.local.SecurePreferencesManager
 import com.monitoring.dashboard.ui.navigation.AppNavGraph
 import com.monitoring.dashboard.ui.navigation.Screen
@@ -29,12 +31,14 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val securePreferencesManager: SecurePreferencesManager,
     private val appLockController: AppLockController,
+    dataRefreshBus: DataRefreshBus,
 ) : ViewModel() {
     private val _needsOnboarding = MutableStateFlow(
         !securePreferencesManager.isOnboardingComplete() ||
@@ -43,6 +47,12 @@ class MainViewModel @Inject constructor(
     val needsOnboarding: StateFlow<Boolean> = _needsOnboarding.asStateFlow()
 
     val isLocked: StateFlow<Boolean> = appLockController.isLocked
+
+    init {
+        viewModelScope.launch {
+            dataRefreshBus.events.collect { refreshGates() }
+        }
+    }
 
     fun refreshGates() {
         _needsOnboarding.value = !securePreferencesManager.isOnboardingComplete() ||
@@ -74,9 +84,27 @@ fun MainScreen(
 
     var handledDeepLink by remember { mutableStateOf(false) }
 
-    LaunchedEffect(isLocked) {
-        if (isLocked && !needsOnboarding) {
+    LaunchedEffect(Unit) {
+        viewModel.refreshGates()
+    }
+
+    LaunchedEffect(needsOnboarding) {
+        if (needsOnboarding) {
             val current = navController.currentDestination?.route
+            if (current != null && current != Screen.Onboarding.route) {
+                navController.navigate(Screen.Onboarding.route) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        inclusive = true
+                    }
+                    launchSingleTop = true
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(isLocked, needsOnboarding, currentDestination?.route) {
+        if (isLocked && !needsOnboarding) {
+            val current = navController.currentDestination?.route ?: return@LaunchedEffect
             if (current != Screen.Lock.route) {
                 navController.navigate(Screen.Lock.route) {
                     launchSingleTop = true
@@ -132,6 +160,7 @@ fun MainScreen(
             navController = navController,
             startDestination = startDestination,
             onUnlocked = viewModel::unlock,
+            onOnboardingFinished = viewModel::refreshGates,
             modifier = Modifier.padding(innerPadding),
         )
     }

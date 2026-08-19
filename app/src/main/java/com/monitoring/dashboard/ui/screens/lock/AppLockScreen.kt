@@ -42,15 +42,22 @@ fun AppLockScreen(
                 }
             },
         )
+        val authenticators = BiometricManager.Authenticators.BIOMETRIC_WEAK or
+            BiometricManager.Authenticators.DEVICE_CREDENTIAL
+        val canAuthenticate = BiometricManager.from(context).canAuthenticate(authenticators)
+        if (canAuthenticate != BiometricManager.BIOMETRIC_SUCCESS) {
+            return
+        }
         val info = BiometricPrompt.PromptInfo.Builder()
             .setTitle(context.getString(R.string.lock_title))
             .setSubtitle(context.getString(R.string.lock_subtitle))
-            .setAllowedAuthenticators(
-                BiometricManager.Authenticators.BIOMETRIC_WEAK or
-                    BiometricManager.Authenticators.DEVICE_CREDENTIAL,
-            )
+            .setAllowedAuthenticators(authenticators)
             .build()
-        prompt.authenticate(info)
+        try {
+            prompt.authenticate(info)
+        } catch (_: Exception) {
+            // No enrolled biometric/PIN: keep the lock UI so the user can retry.
+        }
     }
 
     LaunchedEffect(Unit) {

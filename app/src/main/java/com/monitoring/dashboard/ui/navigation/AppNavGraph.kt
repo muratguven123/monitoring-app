@@ -28,6 +28,7 @@ fun AppNavGraph(
     navController: NavHostController,
     startDestination: String,
     onUnlocked: () -> Unit = {},
+    onOnboardingFinished: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     NavHost(
@@ -38,6 +39,7 @@ fun AppNavGraph(
         composable(Screen.Onboarding.route) {
             OnboardingScreen(
                 onComplete = {
+                    onOnboardingFinished()
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Onboarding.route) { inclusive = true }
                     }
