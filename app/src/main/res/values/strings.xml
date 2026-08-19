@@ -126,7 +126,9 @@
     <string name="notification_fallback_body">Open the app to review your alerts</string>
 
     <!-- ── Demo Screen ───────────────────────────────────────────────── -->
-    <string name="demo_alert_summary">%d Critical · %d Warning</string>
+    <!-- Positional (%1$d/%2$d) is required: with two plain %d, a translation that
+         reorders the counts would silently swap critical and warning. -->
+    <string name="demo_alert_summary">%1$d Critical · %2$d Warning</string>
     <string name="demo_alerts_attention">Alerts require immediate attention</string>
     <string name="demo_active_alerts">Active Alerts (%d)</string>
     <string name="demo_grafana_metrics">Grafana Metrics</string>
@@ -172,6 +174,11 @@
     <string name="alert_filter_resolved">Resolved</string>
 
     <string name="settings_newrelic_account_helper">Optional for REST; required for NRQL / NerdGraph queries.</string>
+    <string name="settings_newrelic_region_label">New Relic region</string>
+    <string name="settings_newrelic_region_helper">Must match one.newrelic.com (US), one.eu.newrelic.com (EU) or one.jp.newrelic.com (JP).</string>
+    <string name="settings_newrelic_region_us">US</string>
+    <string name="settings_newrelic_region_eu">EU</string>
+    <string name="settings_newrelic_region_jp">JP</string>
     <string name="settings_environment_section">Environment profile</string>
     <string name="profile_default">Default</string>
     <string name="profile_staging">Staging</string>
@@ -211,4 +218,17 @@
     <string name="widget_title">Monitoring</string>
     <string name="widget_alerts">%d open alerts</string>
     <string name="widget_no_data">Open app to refresh</string>
+
+    <!-- Grafana server address configuration -->
+    <string name="settings_grafana_url_hint">Host, or full URL if Grafana runs under a path (e.g. example.com/grafana)</string>
+    <string name="settings_grafana_url_resolved">Will connect to %1$s</string>
+    <string name="settings_grafana_url_error_scheme">Only http:// and https:// addresses are supported</string>
+    <string name="settings_grafana_url_error_host">Enter a server address, for example grafana.example.com</string>
+    <string name="settings_grafana_url_error_malformed">This does not look like a valid address</string>
+    <string name="settings_grafana_url_cleartext_warning">Unencrypted http:// is blocked in release builds — use https://</string>
+    <string name="home_grafana_unconfigured_title">Grafana is not configured</string>
+    <string name="home_grafana_unconfigured_body">Add your Grafana server address in Settings to see dashboards</string>
+
+    <!-- App version, shown at the bottom of Settings. %1$s = name, %2$d = build number -->
+    <string name="settings_version">Version %1$s (%2$d)</string>
 </resources>

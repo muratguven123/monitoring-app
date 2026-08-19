@@ -58,6 +58,11 @@
     <string name="settings_grafana_section">Grafana Yapılandırması</string>
     <string name="settings_newrelic_section">New Relic Yapılandırması</string>
     <string name="settings_newrelic_account_helper">REST için isteğe bağlı; NRQL / NerdGraph için gerekli.</string>
+    <string name="settings_newrelic_region_label">New Relic bölgesi</string>
+    <string name="settings_newrelic_region_helper">one.newrelic.com (US), one.eu.newrelic.com (EU) veya one.jp.newrelic.com (JP) ile aynı olmalı.</string>
+    <string name="settings_newrelic_region_us">US</string>
+    <string name="settings_newrelic_region_eu">EU</string>
+    <string name="settings_newrelic_region_jp">JP</string>
     <string name="settings_environment_section">Ortam profili</string>
     <string name="profile_default">Varsayılan</string>
     <string name="profile_staging">Staging</string>
@@ -87,4 +92,126 @@
     <string name="widget_no_data">Yenilemek için uygulamayı açın</string>
     <string name="widget_health_summary">%1$d sağlıklı · %2$d uyarı · %3$d kritik</string>
     <string name="widget_last_sync">Son senkron: %s</string>
+
+    <!-- Durum etiketleri -->
+    <string name="status_loading">Yükleniyor…</string>
+    <string name="status_connected">Bağlı</string>
+    <string name="status_disconnected">Bağlantı yok</string>
+    <string name="status_unknown">Bilinmiyor</string>
+    <string name="status_healthy">Sağlıklı</string>
+    <string name="status_warning">Uyarı</string>
+    <string name="status_critical">Kritik</string>
+    <string name="status_not_reporting">Veri göndermiyor</string>
+    <string name="status_reporting">Veri gönderiyor</string>
+    <string name="status_no_api_key">API anahtarı yok</string>
+    <string name="status_no_data">Veri yok</string>
+    <string name="status_no_data_reported">Bildirilen veri yok</string>
+    <string name="status_na">—</string>
+
+    <!-- Eylemler -->
+    <string name="action_search">Ara</string>
+    <string name="action_show">Göster</string>
+    <string name="action_skip_grafana">Grafana\'yı atla</string>
+    <string name="action_allow_notifications">Bildirimlere izin ver</string>
+    <string name="action_skip_for_now">Şimdilik atla</string>
+    <string name="action_export">Dışa aktar</string>
+
+    <!-- Hatalar -->
+    <string name="error_network">Ağ hatası. Bağlantınızı kontrol edin.</string>
+    <string name="error_unknown">Bilinmeyen bir hata oluştu.</string>
+    <string name="error_invalid_input">URL ve API anahtarı boş bırakılamaz.</string>
+    <string name="error_connection_failed">Bağlantı kurulamadı</string>
+    <string name="error_load_application">Uygulama yüklenemedi</string>
+
+    <!-- Ana ekran -->
+    <string name="home_grafana_dashboards">Grafana Panoları</string>
+    <string name="home_newrelic_apps">New Relic Uygulamaları</string>
+    <string name="home_apps_count">%d uygulama</string>
+    <string name="home_refresh_countdown">%dsn</string>
+    <string name="service_type_dashboards_metrics">Panolar ve metrikler</string>
+    <string name="service_type_apm_alerts">APM ve alarmlar</string>
+
+    <!-- Grafana -->
+    <string name="grafana_search_placeholder">Panolarda ara…</string>
+    <string name="grafana_empty">Pano bulunamadı</string>
+    <string name="grafana_folder_default">Genel</string>
+    <string name="grafana_folder_label">Klasör: %s</string>
+    <string name="grafana_updated_label">Güncellendi: %s</string>
+    <string name="grafana_panels_count">Paneller (%d)</string>
+
+    <!-- New Relic -->
+    <string name="newrelic_search_placeholder">Uygulamalarda ara…</string>
+    <string name="newrelic_empty">Uygulama bulunamadı</string>
+    <string name="newrelic_performance_summary">Performans özeti</string>
+    <string name="newrelic_end_user_summary">Son kullanıcı özeti</string>
+    <string name="newrelic_open_violations">Açık ihlaller (%d)</string>
+
+    <!-- Metrikler -->
+    <string name="metric_response_time">Yanıt süresi</string>
+    <string name="metric_throughput">İşlem hacmi</string>
+    <string name="metric_error_rate">Hata oranı</string>
+    <string name="metric_apdex_score">Apdex skoru</string>
+    <string name="metric_hosts">Sunucular</string>
+    <string name="metric_instances">Örnekler</string>
+    <string name="metric_page_load">Sayfa yüklenme</string>
+    <string name="metric_apdex">Apdex</string>
+    <string name="metric_cpu_usage">CPU kullanımı</string>
+    <string name="metric_memory">Bellek</string>
+    <string name="metric_request_rate">İstek oranı</string>
+    <string name="metric_p95_latency">P95 gecikme</string>
+    <string name="metric_active_connections">Aktif bağl.</string>
+
+    <!-- Birimler -->
+    <string name="unit_ms">%sms</string>
+    <string name="unit_rpm">%s ist/dk</string>
+    <string name="unit_ppm">%s syf/dk</string>
+    <string name="unit_percent">%s%%</string>
+    <string name="unit_errors_percent">%%%s hata</string>
+    <string name="unit_err_percent">%%%s hata</string>
+
+    <!-- Ayarlar: veri kaynakları -->
+    <string name="settings_grafana_url_label">Grafana sunucu adresi</string>
+    <string name="settings_grafana_url_placeholder">https://grafana.sirket.com</string>
+    <string name="settings_grafana_key_label">Grafana API anahtarı</string>
+    <string name="settings_grafana_key_placeholder">Bearer token veya API anahtarı</string>
+    <string name="settings_newrelic_key_label">New Relic API anahtarı</string>
+    <string name="settings_newrelic_key_placeholder">Kullanıcı API anahtarı (NRAK-…)</string>
+    <string name="settings_newrelic_account_label">New Relic hesap kimliği</string>
+    <string name="settings_newrelic_account_placeholder">örn. 1234567</string>
+    <string name="settings_github_section">GitHub Actions</string>
+    <string name="settings_github_token_label">GitHub token</string>
+    <string name="settings_github_repo_label">Depo</string>
+    <string name="settings_github_repo_placeholder">sahip/depo</string>
+
+    <!-- Grafana sunucu adresi doğrulama -->
+    <string name="settings_grafana_url_hint">Sunucu adı veya Grafana bir alt yolda çalışıyorsa tam adres (örn. sirket.com/grafana)</string>
+    <string name="settings_grafana_url_resolved">Bağlanılacak adres: %1$s</string>
+    <string name="settings_grafana_url_error_scheme">Yalnızca http:// ve https:// adresleri desteklenir</string>
+    <string name="settings_grafana_url_error_host">Bir sunucu adresi girin, örneğin grafana.sirket.com</string>
+    <string name="settings_grafana_url_error_malformed">Bu geçerli bir adrese benzemiyor</string>
+    <string name="settings_grafana_url_cleartext_warning">Şifresiz http:// yayın sürümünde engellenir — https:// kullanın</string>
+    <string name="home_grafana_unconfigured_title">Grafana yapılandırılmamış</string>
+    <string name="home_grafana_unconfigured_body">Panoları görmek için Ayarlar\'dan Grafana sunucu adresinizi girin</string>
+
+    <!-- Bildirimler -->
+    <string name="notification_channel_critical">Kritik alarm ihlalleri</string>
+    <string name="notification_channel_critical_desc">Kritik öncelikli New Relic alarm ihlalleri için bildirimler</string>
+    <string name="notification_channel_warning">Uyarı seviyesi alarm ihlalleri</string>
+    <string name="notification_channel_warning_desc">Uyarı öncelikli New Relic alarm ihlalleri için bildirimler</string>
+    <string name="notification_single_violation">⚠ Yeni alarm ihlali</string>
+    <string name="notification_multiple_violations">⚠ %d yeni alarm ihlali</string>
+    <string name="notification_fallback_body">Alarmlarınızı incelemek için uygulamayı açın</string>
+
+    <!-- Demo / önizleme içeriği -->
+    <string name="demo_alert_summary">%1$d kritik · %2$d uyarı</string>
+    <string name="demo_alerts_attention">Alarmlar acil müdahale gerektiriyor</string>
+    <string name="demo_active_alerts">Aktif alarmlar (%d)</string>
+    <string name="demo_grafana_metrics">Grafana metrikleri</string>
+    <string name="demo_severity_critical">KRİTİK</string>
+    <string name="demo_severity_warning">UYARI</string>
+    <string name="severity_alert">Alarm</string>
+
+    <!-- Diğer -->
+    <string name="datasources_empty">Veri kaynağı bulunamadı</string>
+    <string name="settings_version">Sürüm %1$s (%2$d)</string>
 </resources>
