@@ -1,7 +1,6 @@
 package com.monitoring.dashboard.data.repository
 
 import com.google.gson.JsonObject
-import com.monitoring.dashboard.BuildConfig
 import com.monitoring.dashboard.data.local.SecurePreferencesManager
 import com.monitoring.dashboard.data.remote.NerdGraphApiService
 import com.monitoring.dashboard.data.remote.NerdGraphRequest
@@ -93,5 +92,6 @@ class NerdGraphRepository @Inject constructor(
         }
     }
 
-    fun nerdGraphBaseUrl(): String = BuildConfig.NEWRELIC_NERDGRAPH_URL
+    fun nerdGraphBaseUrl(): String =
+        "https://${securePreferencesManager.getNewRelicRegion().apiHost}/graphql"
 }
