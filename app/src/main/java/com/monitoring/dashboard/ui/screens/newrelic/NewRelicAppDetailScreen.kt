@@ -225,7 +225,9 @@ fun NewRelicAppDetailScreen(
                                         ColoredMetricItem(
                                             label = stringResource(R.string.metric_apdex),
                                             value = String.format("%.2f", it),
-                                            color = apdexColor(it.toFloat()),
+                                            color = healthColor(
+                                                MetricThresholdEvaluator.apdex(it, uiState.thresholds),
+                                            ),
                                         )
                                     }
                                 }

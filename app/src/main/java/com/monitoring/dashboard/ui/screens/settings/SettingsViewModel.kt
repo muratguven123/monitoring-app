@@ -1,6 +1,5 @@
 package com.monitoring.dashboard.ui.screens.settings
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.WorkManager
@@ -11,12 +10,15 @@ import com.monitoring.dashboard.data.local.NotificationPreferences
 import com.monitoring.dashboard.data.local.SecurePreferencesManager
 import com.monitoring.dashboard.data.local.UserPreferencesRepository
 import com.monitoring.dashboard.data.remote.util.NetworkResult
+import com.monitoring.dashboard.domain.model.GrafanaServerUrl
+import com.monitoring.dashboard.domain.model.GrafanaUrlError
+import com.monitoring.dashboard.domain.model.GrafanaUrlResult
+import com.monitoring.dashboard.domain.model.NewRelicRegion
 import com.monitoring.dashboard.domain.usecase.CheckGrafanaHealthUseCase
 import com.monitoring.dashboard.domain.usecase.TestNewRelicConnectionUseCase
 import com.monitoring.dashboard.ui.AppLockController
 import com.monitoring.dashboard.worker.AlertMonitorWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -32,6 +34,7 @@ data class SettingsUiState(
     val grafanaApiKey: String = "",
     val newRelicApiKey: String = "",
     val newRelicAccountId: String = "",
+    val newRelicRegion: NewRelicRegion = NewRelicRegion.US,
     val githubToken: String = "",
     val githubRepo: String = "",
     val isSaved: Boolean = false,
@@ -45,11 +48,34 @@ data class SettingsUiState(
     val notificationPreferences: NotificationPreferences = NotificationPreferences(),
     val metricThresholds: MetricThresholds = MetricThresholds(),
     val profileSwitchMessage: String? = null,
+    /** Live validation of [grafanaBaseUrl] as the user types. */
+    val grafanaUrlStatus: GrafanaUrlStatus = GrafanaUrlStatus.Empty,
 )
+
+/**
+ * What to tell the user about the Grafana address they have typed.
+ *
+ * Feedback is immediate because a wrong address otherwise only surfaces much
+ * later as a connection failure, where it is indistinguishable from the server
+ * being down.
+ */
+sealed interface GrafanaUrlStatus {
+    /** Nothing entered yet — show the hint, not an error. */
+    data object Empty : GrafanaUrlStatus
+
+    /** Usable address; [normalized] is what the app will actually call. */
+    data class Valid(val normalized: String, val isCleartext: Boolean) : GrafanaUrlStatus
+
+    data class Invalid(val error: GrafanaUrlError) : GrafanaUrlStatus
+}
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
+    // Injected rather than resolved via WorkManager.getInstance(context): the
+    // static lookup throws unless WorkManager has been initialised, which makes
+    // this ViewModel untestable without static mocking. WorkManagerModule already
+    // provides the same singleton.
+    private val workManager: WorkManager,
     private val securePreferencesManager: SecurePreferencesManager,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val checkGrafanaHealthUseCase: CheckGrafanaHealthUseCase,
@@ -84,12 +110,15 @@ class SettingsViewModel @Inject constructor(
 
     private fun loadCurrentSettings() {
         try {
+            val storedGrafanaUrl = securePreferencesManager.getGrafanaBaseUrl() ?: ""
             _uiState.update {
                 it.copy(
-                    grafanaBaseUrl = securePreferencesManager.getGrafanaBaseUrl() ?: "",
+                    grafanaBaseUrl = storedGrafanaUrl,
+                    grafanaUrlStatus = validateGrafanaUrl(storedGrafanaUrl),
                     grafanaApiKey = securePreferencesManager.getGrafanaApiKey() ?: "",
                     newRelicApiKey = securePreferencesManager.getNewRelicApiKey() ?: "",
                     newRelicAccountId = securePreferencesManager.getNewRelicAccountId() ?: "",
+                    newRelicRegion = securePreferencesManager.getNewRelicRegion(),
                     githubToken = securePreferencesManager.getGithubToken() ?: "",
                     githubRepo = securePreferencesManager.getGithubRepo() ?: "",
                     isSaved = false,
@@ -104,8 +133,25 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun onGrafanaBaseUrlChanged(url: String) {
-        _uiState.update { it.copy(grafanaBaseUrl = url, isSaved = false, connectionMessage = null) }
+        _uiState.update {
+            it.copy(
+                grafanaBaseUrl = url,
+                grafanaUrlStatus = validateGrafanaUrl(url),
+                isSaved = false,
+                connectionMessage = null,
+            )
+        }
     }
+
+    private fun validateGrafanaUrl(raw: String): GrafanaUrlStatus =
+        when (val result = GrafanaServerUrl.parse(raw)) {
+            is GrafanaUrlResult.NotConfigured -> GrafanaUrlStatus.Empty
+            is GrafanaUrlResult.Invalid -> GrafanaUrlStatus.Invalid(result.error)
+            is GrafanaUrlResult.Valid -> GrafanaUrlStatus.Valid(
+                normalized = result.url.baseUrl,
+                isCleartext = result.url.isCleartext,
+            )
+        }
 
     fun onGrafanaApiKeyChanged(key: String) {
         _uiState.update { it.copy(grafanaApiKey = key, isSaved = false, connectionMessage = null) }
@@ -117,6 +163,10 @@ class SettingsViewModel @Inject constructor(
 
     fun onNewRelicAccountIdChanged(id: String) {
         _uiState.update { it.copy(newRelicAccountId = id, isSaved = false) }
+    }
+
+    fun onNewRelicRegionChanged(region: NewRelicRegion) {
+        _uiState.update { it.copy(newRelicRegion = region, isSaved = false, connectionMessage = null) }
     }
 
     fun onGithubTokenChanged(token: String) {
@@ -147,10 +197,7 @@ class SettingsViewModel @Inject constructor(
     fun setPollIntervalMinutes(minutes: Int) {
         viewModelScope.launch {
             userPreferencesRepository.setPollIntervalMinutes(minutes)
-            AlertMonitorWorker.schedule(
-                WorkManager.getInstance(context),
-                minutes.toLong(),
-            )
+            AlertMonitorWorker.schedule(workManager, minutes.toLong())
         }
     }
 
@@ -189,8 +236,22 @@ class SettingsViewModel @Inject constructor(
     fun connectAndSave() {
         viewModelScope.launch {
             val state = _uiState.value
-            val hasGrafana = state.grafanaBaseUrl.isNotBlank() && state.grafanaApiKey.isNotBlank()
+            val grafanaUrlValid = state.grafanaUrlStatus is GrafanaUrlStatus.Valid
+            val hasGrafana = grafanaUrlValid && state.grafanaApiKey.isNotBlank()
             val hasNewRelic = state.newRelicApiKey.isNotBlank()
+
+            // Testing against an address we already know is unusable would just
+            // produce a misleading "connection failed".
+            if (state.grafanaUrlStatus is GrafanaUrlStatus.Invalid) {
+                _uiState.update {
+                    it.copy(
+                        connectionSuccess = false,
+                        connectionMessage = "Grafana: the server address is not valid",
+                        isConnecting = false,
+                    )
+                }
+                return@launch
+            }
 
             if (!hasGrafana && !hasNewRelic) {
                 _uiState.update {
@@ -274,7 +335,11 @@ class SettingsViewModel @Inject constructor(
     private fun persistCredentials() {
         val state = _uiState.value
         if (state.grafanaBaseUrl.isNotBlank()) {
-            securePreferencesManager.saveGrafanaBaseUrl(state.grafanaBaseUrl.trim())
+            // Store the normalised form ("grafana.example.com" →
+            // "https://grafana.example.com/") so every consumer sees a canonical
+            // address and does not have to re-parse user input.
+            val normalized = GrafanaServerUrl.parse(state.grafanaBaseUrl).urlOrNull()?.baseUrl
+            securePreferencesManager.saveGrafanaBaseUrl(normalized ?: state.grafanaBaseUrl.trim())
         }
         if (state.grafanaApiKey.isNotBlank()) {
             securePreferencesManager.saveGrafanaApiKey(state.grafanaApiKey.trim())
@@ -285,6 +350,7 @@ class SettingsViewModel @Inject constructor(
         if (state.newRelicAccountId.isNotBlank()) {
             securePreferencesManager.saveNewRelicAccountId(state.newRelicAccountId.trim())
         }
+        securePreferencesManager.saveNewRelicRegion(state.newRelicRegion)
         if (state.githubToken.isNotBlank()) {
             securePreferencesManager.saveGithubToken(state.githubToken.trim())
         }
@@ -296,6 +362,8 @@ class SettingsViewModel @Inject constructor(
     fun clearAllSettings() {
         try {
             securePreferencesManager.clearAll()
+            appLockController.onAppLockSettingChanged(false)
+            dataRefreshBus.requestRefresh()
         } catch (e: Exception) {
             Timber.e(e, "Failed to clear settings")
         }

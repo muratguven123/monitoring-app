@@ -7,6 +7,8 @@ import com.monitoring.dashboard.data.local.SecurePreferencesManager
 import com.monitoring.dashboard.data.local.UserPreferencesRepository
 import com.monitoring.dashboard.data.remote.dto.newrelic.AlertViolationDto
 import com.monitoring.dashboard.data.remote.dto.newrelic.NewRelicApplicationDto
+import com.monitoring.dashboard.data.remote.GrafanaBaseUrlProvider
+import com.monitoring.dashboard.data.remote.GrafanaNotConfiguredException
 import com.monitoring.dashboard.data.remote.util.NetworkResult
 import com.monitoring.dashboard.data.repository.NewRelicRepository
 import com.monitoring.dashboard.domain.model.Dashboard
@@ -32,6 +34,12 @@ data class HomeUiState(
     val isConfigured: Boolean = true,
     val needsCredentialReset: Boolean = false,
     val isShowingCachedData: Boolean = false,
+    /**
+     * True when no Grafana server address has been configured. Distinct from
+     * [grafanaHealthError]: nothing has failed, the app just does not know which
+     * server to talk to, and the fix is a settings change rather than a retry.
+     */
+    val grafanaNotConfigured: Boolean = false,
     val grafanaHealth: GrafanaHealth? = null,
     val grafanaHealthError: String? = null,
     val grafanaDashboards: List<Dashboard> = emptyList(),
@@ -49,6 +57,7 @@ class HomeViewModel @Inject constructor(
     private val getDashboardsUseCase: GetDashboardsUseCase,
     private val getNewRelicApplicationsUseCase: GetNewRelicApplicationsUseCase,
     private val newRelicRepository: NewRelicRepository,
+    private val grafanaBaseUrlProvider: GrafanaBaseUrlProvider,
     private val securePreferencesManager: SecurePreferencesManager,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val dataRefreshBus: DataRefreshBus,
@@ -109,6 +118,7 @@ class HomeViewModel @Inject constructor(
             it.copy(
                 isConfigured = configured,
                 needsCredentialReset = reset,
+                grafanaNotConfigured = !grafanaBaseUrlProvider.isConfigured(),
                 isLoading = configured,
                 isShowingCachedData = false,
                 secondsUntilRefresh = AUTO_REFRESH_INTERVAL_SECONDS,
@@ -134,18 +144,47 @@ class HomeViewModel @Inject constructor(
     }
 
     private suspend fun loadGrafanaHealth() {
+        if (!grafanaBaseUrlProvider.isConfigured()) {
+            _uiState.update {
+                it.copy(
+                    grafanaNotConfigured = true,
+                    grafanaHealth = null,
+                    grafanaHealthError = null,
+                    isLoading = false,
+                )
+            }
+            return
+        }
         when (val result = checkGrafanaHealthUseCase()) {
             is NetworkResult.Success -> _uiState.update {
-                it.copy(grafanaHealth = result.data, grafanaHealthError = null, isLoading = false)
+                it.copy(
+                    grafanaHealth = result.data,
+                    grafanaHealthError = null,
+                    grafanaNotConfigured = false,
+                    isLoading = false,
+                )
             }
-            is NetworkResult.Error -> _uiState.update {
-                it.copy(grafanaHealthError = result.message ?: "Connection failed", isLoading = false)
+            is NetworkResult.Error -> {
+                val notConfigured = result.exception is GrafanaNotConfiguredException
+                _uiState.update {
+                    it.copy(
+                        // A missing server address is a setup prompt, not an error.
+                        grafanaHealthError = if (notConfigured) {
+                            null
+                        } else {
+                            result.message ?: "Connection failed"
+                        },
+                        grafanaNotConfigured = notConfigured,
+                        isLoading = false,
+                    )
+                }
             }
             is NetworkResult.Loading -> {}
         }
     }
 
     private suspend fun loadGrafanaDashboards() {
+        if (!grafanaBaseUrlProvider.isConfigured()) return
         when (val result = getDashboardsUseCase(limit = 20)) {
             is NetworkResult.Success -> {
                 _uiState.update {

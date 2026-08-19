@@ -3,7 +3,7 @@ package com.monitoring.dashboard.ui.screens.grafana
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import coil.ImageLoader
-import com.monitoring.dashboard.data.local.SecurePreferencesManager
+import com.monitoring.dashboard.data.remote.GrafanaBaseUrlProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,7 +34,7 @@ data class GrafanaPanelDetailUiState(
 @HiltViewModel
 class GrafanaPanelDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    securePreferencesManager: SecurePreferencesManager,
+    grafanaBaseUrlProvider: GrafanaBaseUrlProvider,
     val imageLoader: ImageLoader,
 ) : ViewModel() {
 
@@ -43,7 +43,11 @@ class GrafanaPanelDetailViewModel @Inject constructor(
     private val slug: String     = URLDecoder.decode(savedStateHandle["slug"] ?: "", "UTF-8")
     private val panelTitle: String = URLDecoder.decode(savedStateHandle["panelTitle"] ?: "", "UTF-8")
 
-    private val baseUrl: String = (securePreferencesManager.getGrafanaBaseUrl() ?: "").trimEnd('/')
+    // Canonical origin + reverse-proxy prefix, no trailing slash (the render path
+    // is concatenated onto it). Empty when no server is configured, which the
+    // screen renders as a placeholder instead of firing a doomed image request.
+    private val baseUrl: String =
+        grafanaBaseUrlProvider.current()?.baseUrl?.trimEnd('/') ?: ""
 
     private val _uiState = MutableStateFlow(
         GrafanaPanelDetailUiState(panelTitle = panelTitle)

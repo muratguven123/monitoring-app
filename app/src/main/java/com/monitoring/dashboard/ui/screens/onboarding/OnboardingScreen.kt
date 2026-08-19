@@ -27,12 +27,15 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.monitoring.dashboard.R
+import com.monitoring.dashboard.ui.TestTags
+import com.monitoring.dashboard.ui.screens.settings.NewRelicRegionSelector
 import com.monitoring.dashboard.ui.screens.settings.SettingsViewModel
 import com.monitoring.dashboard.ui.theme.GrafanaOrange
 import com.monitoring.dashboard.ui.theme.NewRelicGreen
@@ -96,7 +99,9 @@ fun OnboardingScreen(
                         label = { Text(stringResource(R.string.settings_grafana_url_label)) },
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag(TestTags.GRAFANA_URL_FIELD),
                     )
                 }
                 item {
@@ -107,7 +112,9 @@ fun OnboardingScreen(
                         visualTransformation = PasswordVisualTransformation(),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag(TestTags.GRAFANA_KEY_FIELD),
                     )
                 }
                 item {
@@ -141,7 +148,9 @@ fun OnboardingScreen(
                         visualTransformation = PasswordVisualTransformation(),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag(TestTags.NEW_RELIC_KEY_FIELD),
                     )
                 }
                 item {
@@ -155,6 +164,12 @@ fun OnboardingScreen(
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                item {
+                    NewRelicRegionSelector(
+                        selected = uiState.newRelicRegion,
+                        onSelect = viewModel::onNewRelicRegionChanged,
                     )
                 }
                 item {

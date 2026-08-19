@@ -1,5 +1,6 @@
 package com.monitoring.dashboard.ui.screens.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -24,13 +26,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.monitoring.dashboard.BuildConfig
 import com.monitoring.dashboard.R
 import com.monitoring.dashboard.data.local.SecurePreferencesManager
+import com.monitoring.dashboard.domain.model.GrafanaUrlError
+import com.monitoring.dashboard.domain.model.NewRelicRegion
+import com.monitoring.dashboard.ui.TestTags
 import com.monitoring.dashboard.ui.theme.GrafanaOrange
 import com.monitoring.dashboard.ui.theme.NewRelicGreen
 
@@ -53,7 +61,9 @@ fun SettingsScreen(
         }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .testTag(TestTags.SETTINGS_LIST),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -96,14 +106,20 @@ fun SettingsScreen(
             )
         }
         item {
+            val status = uiState.grafanaUrlStatus
             OutlinedTextField(
                 value = uiState.grafanaBaseUrl,
                 onValueChange = viewModel::onGrafanaBaseUrlChanged,
                 label = { Text(stringResource(R.string.settings_grafana_url_label)) },
                 placeholder = { Text(stringResource(R.string.settings_grafana_url_placeholder)) },
+                isError = status is GrafanaUrlStatus.Invalid,
+                supportingText = { GrafanaUrlSupportingText(status) },
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(TestTags.GRAFANA_URL_FIELD),
             )
         }
         item {
@@ -115,7 +131,9 @@ fun SettingsScreen(
                 visualTransformation = PasswordVisualTransformation(),
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(TestTags.GRAFANA_KEY_FIELD),
             )
         }
 
@@ -136,7 +154,9 @@ fun SettingsScreen(
                 visualTransformation = PasswordVisualTransformation(),
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(TestTags.NEW_RELIC_KEY_FIELD),
             )
         }
         item {
@@ -149,6 +169,12 @@ fun SettingsScreen(
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        item {
+            NewRelicRegionSelector(
+                selected = uiState.newRelicRegion,
+                onSelect = viewModel::onNewRelicRegionChanged,
             )
         }
 
@@ -223,6 +249,7 @@ fun SettingsScreen(
                 title = stringResource(R.string.settings_app_lock),
                 checked = uiState.appLockEnabled,
                 onCheckedChange = viewModel::setAppLockEnabled,
+                testTag = TestTags.APP_LOCK_SWITCH,
             )
         }
 
@@ -340,8 +367,65 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        item {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(
+                    R.string.settings_version,
+                    BuildConfig.VERSION_NAME,
+                    BuildConfig.VERSION_CODE,
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
     } // Column
+}
+
+/**
+ * Immediate feedback on the Grafana address field.
+ *
+ * On success it echoes the normalised URL, so the user can see that a bare host
+ * became `https://…/` and that a sub-path was kept — the two things most likely
+ * to be silently wrong.
+ */
+@Composable
+private fun GrafanaUrlSupportingText(status: GrafanaUrlStatus) {
+    when (status) {
+        is GrafanaUrlStatus.Empty -> Text(
+            text = stringResource(R.string.settings_grafana_url_hint),
+            style = MaterialTheme.typography.bodySmall,
+        )
+
+        is GrafanaUrlStatus.Invalid -> Text(
+            text = stringResource(
+                when (status.error) {
+                    GrafanaUrlError.UNSUPPORTED_SCHEME -> R.string.settings_grafana_url_error_scheme
+                    GrafanaUrlError.MISSING_HOST -> R.string.settings_grafana_url_error_host
+                    GrafanaUrlError.MALFORMED -> R.string.settings_grafana_url_error_malformed
+                },
+            ),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error,
+        )
+
+        is GrafanaUrlStatus.Valid -> Column {
+            Text(
+                text = stringResource(R.string.settings_grafana_url_resolved, status.normalized),
+                style = MaterialTheme.typography.bodySmall,
+            )
+            if (status.isCleartext) {
+                // Release builds block cleartext traffic outright, so this would
+                // fail at request time with an unhelpful error.
+                Text(
+                    text = stringResource(R.string.settings_grafana_url_cleartext_warning),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -349,15 +433,57 @@ private fun PreferenceSwitch(
     title: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
+    testTag: String? = null,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (testTag != null) Modifier.testTag(testTag) else Modifier)
+            .clickable { onCheckedChange(!checked) },
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(text = title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+        )
     }
+}
+
+@Composable
+fun NewRelicRegionSelector(
+    selected: NewRelicRegion,
+    onSelect: (NewRelicRegion) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = stringResource(R.string.settings_newrelic_region_label),
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        Text(
+            text = stringResource(R.string.settings_newrelic_region_helper),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 4.dp),
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            NewRelicRegion.entries.forEach { region ->
+                FilterChip(
+                    selected = selected == region,
+                    onClick = { onSelect(region) },
+                    label = { Text(stringResource(regionLabel(region))) },
+                )
+            }
+        }
+    }
+}
+
+private fun regionLabel(region: NewRelicRegion): Int = when (region) {
+    NewRelicRegion.US -> R.string.settings_newrelic_region_us
+    NewRelicRegion.EU -> R.string.settings_newrelic_region_eu
+    NewRelicRegion.JP -> R.string.settings_newrelic_region_jp
 }
 
 @Composable

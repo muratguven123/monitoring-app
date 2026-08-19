@@ -4,7 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil.ImageLoader
-import com.monitoring.dashboard.data.local.SecurePreferencesManager
+import com.monitoring.dashboard.data.remote.GrafanaBaseUrlProvider
 import com.monitoring.dashboard.data.remote.dto.DashboardDetailResponseDto
 import com.monitoring.dashboard.data.remote.util.NetworkResult
 import com.monitoring.dashboard.data.repository.GrafanaRepository
@@ -28,7 +28,7 @@ data class GrafanaDashboardDetailUiState(
 class GrafanaDashboardDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val grafanaRepository: GrafanaRepository,
-    private val securePreferencesManager: SecurePreferencesManager,
+    private val grafanaBaseUrlProvider: GrafanaBaseUrlProvider,
     /** Auth-enabled ImageLoader — used by the screen to load Grafana panel renders. */
     val imageLoader: ImageLoader,
 ) : ViewModel() {
@@ -39,9 +39,12 @@ class GrafanaDashboardDetailViewModel @Inject constructor(
     val uiState: StateFlow<GrafanaDashboardDetailUiState> = _uiState.asStateFlow()
 
     init {
-        // Load base URL once so the screen can build panel render URLs
-        val rawBase = securePreferencesManager.getGrafanaBaseUrl() ?: ""
-        val baseUrl = rawBase.trimEnd('/')
+        // Resolve the base URL once so the screen can build panel render URLs.
+        // These are absolute URLs sent straight to Coil, so they must carry the
+        // canonical origin *and* any reverse-proxy path prefix — taking the raw
+        // stored string would break a scheme-less or sub-path deployment.
+        // Trailing slash is stripped because the render path is concatenated.
+        val baseUrl = grafanaBaseUrlProvider.current()?.baseUrl?.trimEnd('/') ?: ""
         _uiState.update { it.copy(grafanaBaseUrl = baseUrl) }
         loadDashboard()
     }

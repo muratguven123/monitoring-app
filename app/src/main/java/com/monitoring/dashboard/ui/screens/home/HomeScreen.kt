@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -139,6 +140,21 @@ fun HomeScreen(
                     text = stringResource(R.string.home_cached_banner),
                     style = MaterialTheme.typography.bodySmall,
                     color = StatusWarning,
+                )
+            }
+        }
+
+        // ── Grafana not configured ──────────────────────────────────
+        // Without a server address every Grafana call fails. Say so plainly and
+        // hand the user a way to fix it, rather than surfacing a network error.
+        if (uiState.grafanaNotConfigured) {
+            item {
+                MonitoringCard(
+                    title = stringResource(R.string.home_grafana_unconfigured_title),
+                    subtitle = stringResource(R.string.home_grafana_unconfigured_body),
+                    icon = Icons.Default.Settings,
+                    iconTint = StatusWarning,
+                    onClick = onNavigateToSettings,
                 )
             }
         }
