@@ -36,7 +36,12 @@ class ShouldNotifyViolationUseCaseTest {
     @Before
     fun setup() {
         userPreferencesRepository = mockk()
-        coEvery { userPreferencesRepository.clearExpiredMutes() } just runs
+        // clearExpiredMutes(now: Long = System.currentTimeMillis()) has a default
+        // argument, so Kotlin evaluates it at the *call* site. Stubbing it as
+        // `clearExpiredMutes()` records whatever timestamp was current when this
+        // line ran, which never equals the timestamp produced later inside the
+        // use case — a strict mock then reports "no answer found".
+        coEvery { userPreferencesRepository.clearExpiredMutes(any()) } just runs
         every { userPreferencesRepository.mutedViolationUntil } returns flowOf(emptyMap())
         useCase = ShouldNotifyViolationUseCase(userPreferencesRepository)
     }
